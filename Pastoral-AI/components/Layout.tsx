@@ -118,15 +118,15 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-4 bg-gradient-to-t from-[#F9FAFB] to-transparent">
+        <div className="p-4 bg-gradient-to-t from-[#F9FAFB] to-transparent space-y-2">
           <button 
             onClick={logout}
-            className="w-full flex items-center justify-center space-x-2 text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 p-3 rounded-xl transition-all duration-200 group"
+            className="w-full flex items-center justify-center space-x-2 text-sm font-medium text-gray-500 hover:text-church-600 hover:bg-church-50 p-3 rounded-xl transition-all duration-200 group border border-gray-200 hover:border-church-200"
           >
             <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
-            <span>Sair do Sistema</span>
+            <span>Voltar ao login</span>
           </button>
-          <p className="text-center text-[10px] text-gray-300 mt-2">Versão 3.0 • Vinculum</p>
+          <p className="text-center text-[10px] text-gray-300">Versão 3.0 • Vinculum</p>
         </div>
       </aside>
 

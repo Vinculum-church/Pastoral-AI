@@ -1,9 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
+const GEMINI_MODEL_FLASH = "gemini-2.5-flash";
+const GEMINI_MODEL_PRO = "gemini-2.5-pro";
+
 const getAi = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not defined. Please check your environment variables.");
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey || apiKey.trim() === "") {
+    throw new Error("VITE_GEMINI_API_KEY não está configurada. Adicione no arquivo .env da pasta Pastoral-AI.");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -16,7 +19,7 @@ export const generateCatecheticalPlan = async (
   try {
     const ai = getAi();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: GEMINI_MODEL_FLASH,
       contents: `Atue como um catequista católico experiente e fiel ao magistério.
       Crie um plano de encontro detalhado com a seguinte estrutura:
       1. Tema e Objetivo
@@ -57,7 +60,7 @@ export const getLiturgicalSuggestions = async (date: string, etapaContext: strin
   try {
     const ai = getAi();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: GEMINI_MODEL_FLASH,
       contents: `Para a data ${date} e uma turma de catequese da etapa '${etapaContext}', forneça sugestões litúrgicas e pastorais.`,
       config: {
         responseMimeType: "application/json",
@@ -137,7 +140,7 @@ export const generateMeetingScript = async (
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: GEMINI_MODEL_PRO,
       contents: prompt,
       config: {
         systemInstruction: "Você é um coordenador de catequese sábio e prático. Suas respostas são estruturadas para serem lidas e aplicadas diretamente na sala.",

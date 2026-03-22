@@ -1,5 +1,5 @@
 import React from 'react';
-import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, CreditCard } from 'lucide-react';
+import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, CreditCard, GraduationCap } from 'lucide-react';
 import { ViewState, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
@@ -102,6 +102,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
             <NavItem view={ViewState.ENCONTROS} icon={Calendar} label={`${labels.encontros} & Frequência`} />
             <NavItem view={ViewState.RELATORIOS} icon={BarChart3} label="Histórico & Relatórios" />
             <NavItem view={ViewState.IA_ASSISTANT} icon={Sparkles} label="Assistente Pastoral IA" />
+            <NavItem view={ViewState.ESCOLA_FORMACAO} icon={GraduationCap} label="Escola Pastoral de Formação" />
             <NavItem view={ViewState.MATERIAIS} icon={FolderOpen} label="Materiais de Apoio" />
             <NavItem view={ViewState.SUBSCRIPTION} icon={CreditCard} label="Assinatura & Planos" />
           </div>
@@ -110,9 +111,11 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
             <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Secretaria</p>
             <NavItem view={ViewState.PARTICIPANTES} icon={Users} label={labels.participantes} />
             <NavItem view={ViewState.MARKETING} icon={MessageCircle} label="Marketing" />
-            <NavItem view={ViewState.ESTRUTURA} icon={Church} label={`${labels.turmas} / Estrutura`} />
             {isCoordenador && (
-              <NavItem view={ViewState.LIDERES} icon={BookOpen} label={labels.equipe} />
+              <>
+                <NavItem view={ViewState.ESTRUTURA} icon={Church} label={`${labels.turmas} / Estrutura`} />
+                <NavItem view={ViewState.LIDERES} icon={BookOpen} label={labels.equipe} />
+              </>
             )}
           </div>
         </nav>

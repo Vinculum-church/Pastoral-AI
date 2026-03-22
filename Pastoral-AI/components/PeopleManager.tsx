@@ -1,21 +1,29 @@
 import React, { useState } from 'react';
-import { Search, Plus, User, Droplets, MessageCircle, HeartHandshake, MapPin, X, Trash2, Smartphone, Printer, Briefcase, Calendar, Mail, BookOpen, Church, ChevronDown, Send } from 'lucide-react';
+import { Search, Plus, User, Droplets, MessageCircle, HeartHandshake, MapPin, X, Trash2, Smartphone, Printer, Briefcase, Calendar, Mail, BookOpen, Church, ChevronDown, Send, UserPlus, Info } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
+import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
 import { Responsavel, Catequista, Catequizando, Familia, ResponsavelSimples } from '../types';
+import { UserRole } from '../types';
 import { MOCK_COMUNIDADES } from '../constants';
+import { isSupabaseConfigured } from '../services/supabaseClient';
 
 interface PeopleManagerProps {
   initialTab?: 'participantes' | 'marketing' | 'lideres';
 }
 
 const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participantes' }) => {
-  const { catequizandos, familias, catequistas, turmas, addCatequizando, addFamilia, addCatequista, paroquia } = useData();
-  const { labels } = usePastoral();
-  
-  const [activeTab, setActiveTab] = useState<'participantes' | 'marketing' | 'lideres'>(initialTab);
+  const { catequizandos, familias, catequistas, turmas, addCatequizando, updateCatequizando, addFamilia, addCatequista, paroquia } = useData();
+  const { user, getSessionToken } = useAuth();
+  const { labels, pastoralType } = usePastoral();
+  const hasSupabase = isSupabaseConfigured();
+  const isCoordenador = user?.role === UserRole.COORDENADOR;
+
+  const safeInitialTab = !isCoordenador && initialTab === 'lideres' ? 'participantes' : initialTab;
+  const [activeTab, setActiveTab] = useState<'participantes' | 'marketing' | 'lideres'>(safeInitialTab);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [filterEtapa, setFilterEtapa] = useState('');
   const [filterAno, setFilterAno] = useState('');
@@ -44,6 +52,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
   const [newCatequista, setNewCatequista] = useState({
     nome: '',
     email: '',
+    senha: '',
     telefone: '',
     data_nascimento: '',
     tempo_servico_anos: 0,
@@ -52,6 +61,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
     experiencia_anterior: '',
     observacoes: ''
   });
+  const [liderError, setLiderError] = useState('');
 
   const uniqueEtapas = Array.from(new Set(turmas.map(t => t.etapa_nome).filter(Boolean))) as string[];
   const uniqueAnos = Array.from(new Set(turmas.map(t => t.ano))).sort((a: number, b: number) => b - a);
@@ -209,34 +219,27 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
       setResponsaveisList(responsaveisList.filter((_, i) => i !== index));
   };
 
-  const handleSaveParticipante = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    let finalResponsaveis = [...responsaveisList];
-    if (finalResponsaveis.length === 0 && tempResponsavel.nome && tempResponsavel.telefone) {
-        finalResponsaveis.push(tempResponsavel);
-    }
+  const handleEditParticipante = (student: Catequizando) => {
+    setEditingId(student.id);
+    setStudentForm({
+      nome_completo: student.nome_completo,
+      data_nascimento: student.data_nascimento,
+      telefone: student.telefone || '',
+      turma_id: student.turma_id,
+      batismo: student.sacramentos.batismo,
+      eucaristia: student.sacramentos.eucaristia,
+      crisma: student.sacramentos.crisma,
+      observacoes_pastorais: student.observacoes_pastorais,
+      familia_id: student.familia_id || '',
+    });
+    setResponsaveisList(student.responsaveis || []);
+    setTempResponsavel({ nome: '', parentesco: 'Mãe', telefone: '' });
+    setIsModalOpen(true);
+  };
 
-    const primaryResp = finalResponsaveis[0] || { nome: '', telefone: '', parentesco: '' };
-
-    addCatequizando({
-        nome_completo: studentForm.nome_completo,
-        data_nascimento: studentForm.data_nascimento,
-        telefone: studentForm.telefone,
-        turma_id: studentForm.turma_id,
-        sacramentos: {
-            batismo: studentForm.batismo,
-            eucaristia: studentForm.eucaristia,
-            crisma: studentForm.crisma
-        },
-        observacoes_pastorais: studentForm.observacoes_pastorais,
-        familia_id: '',
-        nome_responsavel: primaryResp.nome,
-        telefone_responsavel: primaryResp.telefone,
-        responsaveis: finalResponsaveis
-    }); 
-    
+  const resetParticipanteForm = () => {
     setIsModalOpen(false);
+    setEditingId(null);
     setStudentForm({
         nome_completo: '',
         data_nascimento: '',
@@ -252,13 +255,97 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
     setTempResponsavel({ nome: '', parentesco: 'Mãe', telefone: '' });
   };
 
-  const handleSaveLider = (e: React.FormEvent) => {
+  const handleSaveParticipante = (e: React.FormEvent) => {
     e.preventDefault();
-    addCatequista(newCatequista);
+    
+    let finalResponsaveis = [...responsaveisList];
+    if (finalResponsaveis.length === 0 && tempResponsavel.nome && tempResponsavel.telefone) {
+        finalResponsaveis.push(tempResponsavel);
+    }
+
+    const primaryResp = finalResponsaveis[0] || { nome: '', telefone: '', parentesco: '' };
+
+    const payload = {
+        nome_completo: studentForm.nome_completo,
+        data_nascimento: studentForm.data_nascimento,
+        telefone: studentForm.telefone,
+        turma_id: studentForm.turma_id,
+        sacramentos: {
+            batismo: studentForm.batismo,
+            eucaristia: studentForm.eucaristia,
+            crisma: studentForm.crisma
+        },
+        observacoes_pastorais: studentForm.observacoes_pastorais,
+        familia_id: '',
+        nome_responsavel: primaryResp.nome,
+        telefone_responsavel: primaryResp.telefone,
+        responsaveis: finalResponsaveis
+    };
+
+    if (editingId) {
+        updateCatequizando({ ...payload, id: editingId });
+    } else {
+        addCatequizando(payload);
+    }
+    
+    resetParticipanteForm();
+  };
+
+  const handleSaveLider = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLiderError('');
+    if (!newCatequista.turma_id) {
+      setLiderError(`Selecione a ${labels.turma.toLowerCase()} em que o ${labels.lider.toLowerCase()} atuará.`);
+      return;
+    }
+    if (newCatequista.senha.length < 6) {
+      setLiderError('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    if (!hasSupabase || !isCoordenador) {
+      setLiderError('Apenas coordenadores podem cadastrar catequistas com acesso ao sistema.');
+      return;
+    }
+
+    try {
+        const token = await getSessionToken();
+        if (!token) {
+          setLiderError('Sessão expirada. Faça login novamente.');
+          return;
+        }
+        const res = await fetch('/api/create-lider', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            email: newCatequista.email,
+            nome: newCatequista.nome,
+            password: newCatequista.senha,
+            turmaId: newCatequista.turma_id,
+            pastoralType: pastoralType || 'catequese',
+            paroquiaId: user?.parish_id || paroquia.id,
+            comunidadeId: user?.comunidade_id || '',
+          }),
+        });
+        const text = await res.text();
+        const data = (() => { try { return JSON.parse(text); } catch { return {}; } })();
+        if (!res.ok) {
+          const msg = data?.error || (res.status === 401 ? 'Sessão expirada. Faça login novamente.' : res.status === 503 ? 'Servidor não configurado. Verifique o Supabase.' : `Erro ${res.status}: ${text?.slice(0, 100) || 'Erro ao criar acesso.'}`);
+          setLiderError(msg);
+          return;
+        }
+    } catch (err: any) {
+      setLiderError(err.message || 'Erro ao criar acesso.');
+      return;
+    }
+
+    const { senha, ...dataForLider } = newCatequista;
+    await addCatequista(dataForLider);
+
     setIsModalOpen(false);
     setNewCatequista({
         nome: '',
         email: '',
+        senha: '',
         telefone: '',
         data_nascimento: '',
         tempo_servico_anos: 0,
@@ -304,7 +391,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
             <button onClick={handlePrintList} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-semibold flex items-center hover:bg-gray-50 transition-colors">
                 <Printer size={20} className="mr-2" /> Imprimir
             </button>
-            <button onClick={() => setIsModalOpen(true)} className="bg-church-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center hover:bg-church-700 transition-colors shadow-sm shadow-church-200">
+            <button onClick={() => { resetParticipanteForm(); setIsModalOpen(true); }} className="bg-church-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center hover:bg-church-700 transition-colors shadow-sm shadow-church-200">
                 <Plus size={20} className="mr-2" /> Novo Cadastro
             </button>
         </div>
@@ -333,16 +420,18 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
           >
             Marketing & Mensagens
           </button>
-          <button
-            onClick={() => setActiveTab('lideres')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === 'lideres'
-                ? 'border-church-500 text-church-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            {labels.lideres}
-          </button>
+          {isCoordenador && (
+            <button
+              onClick={() => setActiveTab('lideres')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                activeTab === 'lideres'
+                  ? 'border-church-500 text-church-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {labels.lideres}
+            </button>
+          )}
         </nav>
       </div>
 
@@ -457,7 +546,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button className="text-church-600 hover:text-church-900 font-semibold">Editar</button>
+                                    <button onClick={() => handleEditParticipante(student)} className="text-church-600 hover:text-church-900 font-semibold">Editar</button>
                                 </td>
                             </tr>
                         );
@@ -561,9 +650,11 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
              <div className="bg-church-600 p-5 flex justify-between items-center text-white sticky top-0 z-10">
                 <div className="flex items-center space-x-2">
                     <User size={20} />
-                    <h3 className="font-bold text-lg">Novo Cadastro ({activeTab === 'participantes' ? labels.participante : activeTab === 'lideres' ? labels.lider : 'Contato'})</h3>
+                    <h3 className="font-bold text-lg">
+                      {editingId ? 'Editar' : 'Novo'} Cadastro ({activeTab === 'participantes' ? labels.participante : activeTab === 'lideres' ? labels.lider : 'Contato'})
+                    </h3>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="hover:bg-white/20 rounded-full p-1 transition-colors"><X size={20} /></button>
+                <button onClick={resetParticipanteForm} className="hover:bg-white/20 rounded-full p-1 transition-colors"><X size={20} /></button>
              </div>
              
              <div className="p-6 md:p-8">
@@ -709,7 +800,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                         </div>
 
                         <button type="submit" className="w-full bg-church-600 text-white py-4 rounded-xl font-bold hover:bg-church-700 transition-all shadow-lg shadow-church-200 text-lg flex justify-center items-center transform active:scale-[0.99]">
-                           <Plus size={20} className="mr-2" /> Salvar Cadastro
+                           <Plus size={20} className="mr-2" /> {editingId ? 'Salvar Alterações' : 'Salvar Cadastro'}
                         </button>
                     </form>
                 )}
@@ -748,12 +839,36 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
 
                         <div>
                             <h4 className="font-semibold text-gray-900 border-b pb-2 mb-3 flex items-center text-sm uppercase tracking-wide">
+                                <BookOpen size={16} className="mr-2 text-church-600" />
+                                {labels.turma}
+                            </h4>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">{labels.turma} em que será {labels.lider.toLowerCase()} *</label>
+                                <select
+                                    required
+                                    className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-church-500 outline-none text-gray-900"
+                                    value={newCatequista.turma_id}
+                                    onChange={e => setNewCatequista({...newCatequista, turma_id: e.target.value})}
+                                    disabled={turmas.length === 0}
+                                >
+                                    <option value="">
+                                        {turmas.length === 0 ? `Crie uma ${labels.turma.toLowerCase()} antes` : `Selecione a ${labels.turma.toLowerCase()}`}
+                                    </option>
+                                    {turmas.map(t => (
+                                        <option key={t.id} value={t.id}>{t.etapa_nome} ({t.dia_encontro})</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="font-semibold text-gray-900 border-b pb-2 mb-3 flex items-center text-sm uppercase tracking-wide">
                                 <Mail size={16} className="mr-2 text-church-600" />
-                                Contato
+                                Contato e Acesso
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">E-mail *</label>
                                     <input 
                                         type="email" 
                                         required 
@@ -764,7 +879,19 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Telefone / WhatsApp</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Senha *</label>
+                                    <input 
+                                        type="password" 
+                                        required 
+                                        className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-church-500 outline-none text-gray-900" 
+                                        value={newCatequista.senha} 
+                                        onChange={e => setNewCatequista({...newCatequista, senha: e.target.value})} 
+                                        placeholder="Mínimo 6 caracteres"
+                                        minLength={6}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Telefone / WhatsApp *</label>
                                     <input 
                                         type="text" 
                                         required 
@@ -776,6 +903,13 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                                 </div>
                             </div>
                         </div>
+
+                        {liderError && (
+                            <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm flex items-start">
+                                <Info size={16} className="mr-2 mt-0.5 flex-shrink-0" />
+                                {liderError}
+                            </div>
+                        )}
 
                         <div className="pt-4 border-t border-gray-100">
                             <button type="submit" className="w-full bg-church-600 text-white py-3 rounded-xl font-bold hover:bg-church-700 transition-all shadow-sm">

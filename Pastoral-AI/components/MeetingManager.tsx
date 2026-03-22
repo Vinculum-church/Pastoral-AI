@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, CheckCircle, Clock, FileText, ChevronRight, Plus, X, Users, Check, AlertCircle, BookOpen, Sparkles, Loader2, Save, Printer, Edit3, Wand2, ArrowRight, Book, Feather } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Calendar, CheckCircle, Clock, FileText, ChevronRight, Plus, X, Users, Check, AlertCircle, BookOpen, Sparkles, Loader2, Save, Printer, Edit3, Wand2, ArrowRight, Book, Feather, Eye, Pencil } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { usePastoral } from '../contexts/PastoralContext';
 import { Encontro, LiturgicalColor, Presenca } from '../types';
 import { getLiturgicalSuggestions, LiturgySuggestion, generateMeetingScript } from '../services/geminiService';
+import RoteiroViewer from './RoteiroViewer';
 
 const MeetingManager: React.FC = () => {
   const { turmas, encontros, catequizandos, presencas, addEncontro, updatePresenca, updateEncontro, paroquia } = useData();
@@ -33,14 +34,59 @@ const MeetingManager: React.FC = () => {
     observacoes: ''
   });
 
+  // Local state for Roteiro (evita apagar letras ao digitar rápido - debounce no updateEncontro)
+  const [localRoteiro, setLocalRoteiro] = useState('');
+  const roteiroDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [roteiroViewMode, setRoteiroViewMode] = useState<'view' | 'edit'>('view');
+
   const activeEncontros = encontros.filter(e => e.turma_id === selectedTurma);
   const activeCatequizandos = catequizandos.filter(c => c.turma_id === selectedTurma);
   const currentEncontroDetails = activeEncontros.find(e => e.id === selectedEncontro);
   const activeTurmaName = turmas.find(t => t.id === selectedTurma)?.etapa_nome || 'Turma';
   const activeTurmaObj = turmas.find(t => t.id === selectedTurma);
 
-  // Helper para formatar data evitando bug de Timezone (UTC vs Local)
-  // Recebe 'YYYY-MM-DD' e retorna 'DD/MM/YYYY' sem instanciar Date() com fuso local
+  // Sincroniza localRoteiro ao trocar de encontro; cancela debounce pendente
+  useEffect(() => {
+    if (roteiroDebounceRef.current) {
+      clearTimeout(roteiroDebounceRef.current);
+      roteiroDebounceRef.current = null;
+    }
+    setLocalRoteiro(currentEncontroDetails?.observacoes || '');
+    setRoteiroViewMode('view');
+  }, [selectedEncontro, currentEncontroDetails?.id]);
+
+  useEffect(() => {
+    return () => {
+      if (roteiroDebounceRef.current) clearTimeout(roteiroDebounceRef.current);
+    };
+  }, []);
+
+  const saveRoteiro = useCallback((valor: string) => {
+    if (!currentEncontroDetails) return;
+    updateEncontro({ ...currentEncontroDetails, observacoes: valor });
+  }, [currentEncontroDetails, updateEncontro]);
+
+  const handleRoteiroChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const v = e.target.value;
+    setLocalRoteiro(v);
+    if (roteiroDebounceRef.current) clearTimeout(roteiroDebounceRef.current);
+    const encontroId = currentEncontroDetails?.id;
+    roteiroDebounceRef.current = setTimeout(() => {
+      if (encontroId && selectedEncontro === encontroId) {
+        saveRoteiro(v);
+      }
+    }, 400);
+  };
+
+  const handleRoteiroBlur = () => {
+    if (roteiroDebounceRef.current) {
+      clearTimeout(roteiroDebounceRef.current);
+      roteiroDebounceRef.current = null;
+    }
+    saveRoteiro(localRoteiro);
+  };
+
+
   const formatDateDisplay = (dateString: string) => {
       if (!dateString) return '';
       const [year, month, day] = dateString.split('-');
@@ -357,17 +403,43 @@ const MeetingManager: React.FC = () => {
                              ) : <p className="text-sm text-gray-400 italic">Nenhum {labels.participante.toLowerCase()} cadastrado neste {labels.turma.toLowerCase()}.</p>}
                         </div>
 
-                        {/* Observations / Log */}
-                        <div>
-                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Roteiro Pastoral</h4>
-                             
-                             <div className="space-y-2">
+                        {/* Roteiro Pastoral */}
+                        <div className="bg-white rounded-2xl border border-gray-100">
+                             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Roteiro Pastoral</h4>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setRoteiroViewMode('view')}
+                                    className={`p-2 rounded-lg transition-colors ${roteiroViewMode === 'view' ? 'bg-church-100 text-church-700' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}`}
+                                    title="Visualizar"
+                                  >
+                                    <Eye size={18} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRoteiroViewMode('edit')}
+                                    className={`p-2 rounded-lg transition-colors ${roteiroViewMode === 'edit' ? 'bg-church-100 text-church-700' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}`}
+                                    title="Editar"
+                                  >
+                                    <Pencil size={18} />
+                                  </button>
+                                </div>
+                             </div>
+                             <div className="p-5 min-h-[200px]">
+                               {roteiroViewMode === 'view' ? (
+                                 <div className="bg-amber-50/30 rounded-xl p-6 border border-amber-100/50">
+                                   <RoteiroViewer content={localRoteiro} onEmptyEdit={() => setRoteiroViewMode('edit')} />
+                                 </div>
+                               ) : (
                                  <textarea 
-                                    className="w-full border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-church-500 outline-none min-h-[200px] bg-gray-50 focus:bg-white transition-colors leading-relaxed font-serif"
-                                    value={currentEncontroDetails.observacoes || ''}
-                                    onChange={(e) => updateEncontro({...currentEncontroDetails, observacoes: e.target.value})}
-                                    placeholder="Descreva o roteiro do encontro: 1. Acolhida, 2. Leituras, 3. Dinâmicas..."
+                                   className="w-full border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-church-500 outline-none min-h-[200px] bg-gray-50 focus:bg-white transition-colors leading-relaxed font-serif"
+                                   value={localRoteiro}
+                                   onChange={handleRoteiroChange}
+                                   onBlur={handleRoteiroBlur}
+                                   placeholder="Descreva o roteiro do encontro: 1. Acolhida, 2. Leituras, 3. Dinâmicas..."
                                  />
+                               )}
                              </div>
                         </div>
                     </div>
@@ -548,6 +620,17 @@ const MeetingManager: React.FC = () => {
                          <option key={cor} value={cor}>{cor}</option>
                       ))}
                    </select>
+                </div>
+
+                <div>
+                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Roteiro Pastoral</label>
+                   <textarea 
+                      value={newEncontro.observacoes}
+                      onChange={e => setNewEncontro({...newEncontro, observacoes: e.target.value})}
+                      placeholder="Descreva o roteiro do encontro: 1. Acolhida, 2. Leituras, 3. Dinâmicas..."
+                      className="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:ring-2 focus:ring-church-500 focus:bg-white outline-none transition-all min-h-[120px] resize-y"
+                   />
+                   <p className="text-xs text-gray-400 mt-1">Opcional. Você também pode preencher depois ou usar a IA para gerar.</p>
                 </div>
                 
                 <button 

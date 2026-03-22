@@ -3,7 +3,7 @@
 export enum PastoralType {
   CATEQUESE = 'catequese',
   PERSEVERANCA = 'perseveranca',
-  GRUPO_JOVENS = 'grupo_jovens',
+  FIEL = 'fiel',
   PASTORAL_CRISTA = 'pastoral_crista',
 }
 
@@ -47,6 +47,8 @@ export interface User {
   role: UserRole;
   parish_id: string;
   paroquia: string;
+  comunidade_id?: string;
+  comunidade?: string;
   pastoral_type?: PastoralType;
   avatar?: string;
 }
@@ -220,6 +222,8 @@ export enum ViewState {
   ENCONTROS = 'encontros',
   IA_ASSISTANT = 'ia_assistant',
   MATERIAIS = 'materiais',
+  ESCOLA_FORMACAO = 'escola_formacao',
   RELATORIOS = 'relatorios',
-  SUBSCRIPTION = 'subscription'
+  SUBSCRIPTION = 'subscription',
+  ADMIN = 'admin'
 }

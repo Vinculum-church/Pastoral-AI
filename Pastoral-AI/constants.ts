@@ -50,29 +50,29 @@ export const PASTORAL_CONFIGS: Record<PastoralType, PastoralConfig> = {
     },
     etapasDisponiveis: ['Módulo I - Iniciação', 'Módulo II - Aprofundamento', 'Módulo III - Missão', 'Módulo IV - Liderança'],
   },
-  [PastoralType.GRUPO_JOVENS]: {
-    type: PastoralType.GRUPO_JOVENS,
-    icon: 'Users',
+  [PastoralType.FIEL]: {
+    type: PastoralType.FIEL,
+    icon: 'Heart',
     color: 'purple',
     labels: {
-      pastoralNome: 'Grupo de Jovens',
-      pastoralDescricao: 'Gestão do Grupo de Jovens',
-      participante: 'Jovem',
-      participantes: 'Jovens',
-      lider: 'Coordenador',
-      lideres: 'Coordenadores',
-      equipe: 'Equipe de Coordenação',
-      turma: 'Núcleo',
-      turmas: 'Núcleos',
-      encontro: 'Encontro',
-      encontros: 'Encontros',
-      etapa: 'Ciclo',
-      etapas: 'Ciclos',
-      coordenador: 'Coordenador Geral',
-      novoParticipante: 'Novo Jovem',
-      novoLider: 'Novo Coordenador',
+      pastoralNome: 'Fiel',
+      pastoralDescricao: 'Portal do Fiel - Acesso sem cadastro',
+      participante: 'Fiel',
+      participantes: 'Fiéis',
+      lider: '-',
+      lideres: '-',
+      equipe: '-',
+      turma: '-',
+      turmas: '-',
+      encontro: '-',
+      encontros: '-',
+      etapa: '-',
+      etapas: '-',
+      coordenador: '-',
+      novoParticipante: '-',
+      novoLider: '-',
     },
-    etapasDisponiveis: ['Acolhida', 'Formação', 'Missão', 'Liderança Jovem'],
+    etapasDisponiveis: [],
   },
   [PastoralType.PASTORAL_CRISTA]: {
     type: PastoralType.PASTORAL_CRISTA,
@@ -140,6 +140,8 @@ export const MOCK_PAROQUIA: Paroquia = {
   endereco: 'Rua das Flores, 123',
   telefone: '(11) 5555-1234'
 };
+
+export const MOCK_PAROQUIAS: Paroquia[] = [MOCK_PAROQUIA];
 
 export const MOCK_COMUNIDADES: Comunidade[] = [
   { id: 'c1', paroquia_id: 'p1', nome: 'Matriz São Francisco', padroeiro: 'São Francisco' },

@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Church, Plus, X, Users, Calendar, Clock } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
+import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
 
 const EstruturaView: React.FC = () => {
   const { turmas, addTurma } = useData();
+  const { user } = useAuth();
   const { labels, config } = usePastoral();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const currentYear = new Date().getFullYear();
   const [form, setForm] = useState({
-    comunidade_id: '',
+    comunidade_id: user?.comunidade_id || '',
     etapa_id: '',
     etapa_nome: config.etapasDisponiveis[0] || '',
     ano: currentYear,
@@ -18,11 +20,17 @@ const EstruturaView: React.FC = () => {
     horario: '',
   });
 
+  useEffect(() => {
+    if (user?.comunidade_id) {
+      setForm(prev => ({ ...prev, comunidade_id: user.comunidade_id! }));
+    }
+  }, [user?.comunidade_id]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.etapa_nome || !form.dia_encontro || !form.horario) return;
     addTurma({
-      comunidade_id: form.comunidade_id || '',
+      comunidade_id: form.comunidade_id || user?.comunidade_id || '',
       etapa_id: form.etapa_id || '',
       etapa_nome: form.etapa_nome,
       ano: form.ano,

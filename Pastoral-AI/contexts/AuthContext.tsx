@@ -7,9 +7,9 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string, role?: string, pastoralType?: string) => Promise<{ success: boolean; error?: string }>;
-  register: (email: string, password: string, nome: string, role?: string, pastoralType?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
+  getSessionToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,16 +18,32 @@ const roleMap: Record<string, UserRole> = {
   coordenador: UserRole.COORDENADOR,
   lider: UserRole.LIDER,
   admin: UserRole.ADMIN,
+  'administrador paroquial': UserRole.ADMIN,
+  administrador: UserRole.ADMIN,
 };
+
+function resolveRole(profileRole: unknown): UserRole {
+  // Postgres enum pode vir como string ou objeto
+  const raw = profileRole != null && typeof profileRole === 'object' && 'value' in (profileRole as object)
+    ? (profileRole as { value: string }).value
+    : profileRole;
+  const r = String(raw ?? '').toLowerCase().trim();
+  if (roleMap[r]) return roleMap[r];
+  // Fallback: se contém "admin" em qualquer variação
+  if (r.includes('admin')) return UserRole.ADMIN;
+  return UserRole.LIDER;
+}
 
 function mapProfileToUser(profile: any, email: string): User {
   return {
     id: profile.id,
     name: profile.nome || email.split('@')[0],
     email: email,
-    role: roleMap[profile.role] || UserRole.LIDER,
+    role: resolveRole(profile.role),
     parish_id: profile.paroquia_id || '',
     paroquia: profile.paroquia_nome || 'Paróquia',
+    comunidade_id: profile.comunidade_id || '',
+    comunidade: profile.comunidade_nome || '',
     pastoral_type: (profile.pastoral_type as PastoralType) || PastoralType.CATEQUESE,
     avatar: profile.nome?.charAt(0) || 'U',
   };
@@ -43,6 +59,8 @@ function authUserToMinimalUser(userId: string, email: string): User {
     role: UserRole.LIDER,
     parish_id: '',
     paroquia: 'Paróquia',
+    comunidade_id: '',
+    comunidade: '',
     pastoral_type: PastoralType.CATEQUESE,
     avatar: name.charAt(0).toUpperCase() || 'U',
   };
@@ -59,11 +77,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
 
+    let cancelled = false;
+
+    const timeoutId = setTimeout(() => {
+      if (cancelled) return;
+      setLoading(false);
+    }, 6000);
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (cancelled) return;
       try {
         if (session?.user) {
           const email = session.user.email || '';
           const profile = await fetchProfile(session.user.id);
+          if (cancelled) return;
           if (profile) {
             setUser(mapProfileToUser(profile, email));
           } else {
@@ -75,6 +102,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(authUserToMinimalUser(session.user.id, session.user.email || ''));
         }
       } finally {
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     });
@@ -87,40 +122,56 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (profile) {
             setUser(mapProfileToUser(profile, email));
           } else {
-            setUser(authUserToMinimalUser(session.user.id, email));
+            setUser(prev => {
+              if (prev && prev.id === session.user.id && (prev.parish_id || prev.comunidade_id)) {
+                return prev;
+              }
+              return authUserToMinimalUser(session.user.id, email);
+            });
           }
         } else {
           setUser(null);
         }
       } catch (_) {
-        if (session?.user) {
-          setUser(authUserToMinimalUser(session.user.id, session.user.email || ''));
-        } else {
-          setUser(null);
-        }
+        setUser(prev => {
+          if (session?.user && prev && prev.id === session.user.id && (prev.parish_id || prev.comunidade_id)) {
+            return prev;
+          }
+          if (session?.user) {
+            return authUserToMinimalUser(session.user.id, session.user.email || '');
+          }
+          return null;
+        });
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function fetchProfile(userId: string) {
     if (!supabase) return null;
     const timeout = (ms: number) => new Promise<null>((resolve) => setTimeout(() => resolve(null), ms));
     try {
-      const { data } = await Promise.race([
+      const result = await Promise.race([
         supabase
           .from('profiles')
-          .select('id, nome, email, role, paroquia_id, pastoral_type, paroquias ( nome )')
+          .select('id, nome, email, role, paroquia_id, comunidade_id, pastoral_type, paroquias ( nome ), comunidades ( nome )')
           .eq('id', userId)
-          .maybeSingle()
-          .then((r) => r.data),
-        timeout(8000),
-      ]) as any;
-      if (data) {
+          .maybeSingle(),
+        timeout(8000).then(() => null),
+      ]);
+      if (!result || (result as any).error) return null;
+      const profile = (result as any).data;
+      if (profile) {
         return {
-          ...data,
-          paroquia_nome: data.paroquias?.nome || 'Paróquia',
+          ...profile,
+          paroquia_nome: profile.paroquias?.nome || 'Paróquia',
+          comunidade_nome: profile.comunidades?.nome || '',
+          comunidade_id: profile.comunidade_id || null,
         };
       }
     } catch (_) {}
@@ -158,26 +209,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const profile = await fetchProfile(data.user.id);
         if (profile) {
           const mappedUser = mapProfileToUser(profile, email);
-          if (role) mappedUser.role = roleMap[role] || mappedUser.role;
-          if (pastoralType) mappedUser.pastoral_type = pastoralType as PastoralType;
-          setUser(mappedUser);
-
-          // Atualizar role e pastoral no perfil se diferente
-          if (role || pastoralType) {
-            const updates: Record<string, string> = {};
-            if (role) updates.role = role;
-            if (pastoralType) updates.pastoral_type = pastoralType;
-            supabase.from('profiles').update(updates).eq('id', data.user.id).then(() => {});
+          // Coordenador e líder: pastoral_type SEMPRE do perfil (segmento atribuído no cadastro)
+          // Admin: pode usar o selecionado no login
+          if (pastoralType && mappedUser.role === UserRole.ADMIN) {
+            mappedUser.pastoral_type = pastoralType as PastoralType;
           }
+          setUser(mappedUser);
         } else {
           const minUser = authUserToMinimalUser(data.user.id, email);
-          if (role) minUser.role = roleMap[role] || minUser.role;
           if (pastoralType) minUser.pastoral_type = pastoralType as PastoralType;
           setUser(minUser);
         }
       } catch (_) {
         const minUser = authUserToMinimalUser(data.user.id, email);
-        if (role) minUser.role = roleMap[role] || minUser.role;
         if (pastoralType) minUser.pastoral_type = pastoralType as PastoralType;
         setUser(minUser);
       }
@@ -186,40 +230,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { success: true };
   };
 
-  const register = async (email: string, password: string, nome: string, role?: string, pastoralType?: string): Promise<{ success: boolean; error?: string }> => {
-    if (!useSupabase) {
-      return { success: false, error: 'Supabase não configurado.' };
-    }
-
-    if (!supabase) return { success: false, error: 'Supabase não configurado.' };
-    const { data, error } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    if (data.user) {
-      await supabase.from('profiles').insert({
-        id: data.user.id,
-        nome,
-        email,
-        role: role || 'lider',
-        pastoral_type: pastoralType || 'catequese',
-      });
-    }
-
-    return { success: true };
+  const getSessionToken = async (): Promise<string | null> => {
+    if (!supabase) return null;
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
   };
 
   const logout = async () => {
-    if (useSupabase && supabase) {
-      await supabase.auth.signOut();
+    try {
+      if (useSupabase && supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch (err) {
+      console.error('Erro ao fazer signOut:', err);
+    } finally {
+      setUser(null);
     }
-    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user, getSessionToken }}>
       {children}
     </AuthContext.Provider>
   );

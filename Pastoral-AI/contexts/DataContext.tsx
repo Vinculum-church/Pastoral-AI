@@ -9,6 +9,7 @@ import {
   Paroquia,
   MaterialApoio,
   Aviso,
+  UserRole,
 } from '../types';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { useAuth } from './AuthContext';
@@ -38,6 +39,7 @@ interface DataContextType {
   loading: boolean;
 
   addCatequizando: (data: Omit<Catequizando, 'id'>) => Promise<void>;
+  updateCatequizando: (catequizando: Catequizando) => Promise<void>;
   addFamilia: (data: Omit<Familia, 'id'>) => void;
   addCatequista: (data: Omit<Catequista, 'id'>) => Promise<void>;
   addEncontro: (data: Omit<Encontro, 'id'>) => Promise<void>;
@@ -93,7 +95,7 @@ function rowToLider(row: any): Catequista {
     email: row.email || '',
     telefone: row.telefone || '',
     data_nascimento: row.data_nascimento || '',
-    comunidade_id: '',
+    comunidade_id: row.comunidade_id || '',
     turma_id: row.turma_id || '',
     tempo_servico_anos: row.tempo_servico_anos || 0,
     experiencia_anterior: row.experiencia || '',
@@ -101,9 +103,10 @@ function rowToLider(row: any): Catequista {
   };
 }
 
-function liderToRow(data: Omit<Catequista, 'id'>, paroquiaId: string, pastoralType: string) {
+function liderToRow(data: Omit<Catequista, 'id'>, paroquiaId: string, comunidadeId: string, pastoralType: string) {
   return {
     paroquia_id: paroquiaId,
+    comunidade_id: comunidadeId || null,
     pastoral_type: pastoralType,
     turma_id: data.turma_id || null,
     nome: data.nome,
@@ -191,9 +194,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [paroquia, setParoquia] = useState<Paroquia>(MOCK_PAROQUIA);
 
   const paroquiaId = user?.parish_id || '';
+  const comunidadeId = user?.comunidade_id || '';
   const pastoralType = activePastoralType || user?.pastoral_type || 'catequese';
 
-  /** Quando o usuário não tem paróquia (perfil mínimo), usa a primeira paróquia do banco para inserir e carregar participantes/líderes. */
+  /** Admin não carrega dados pastorais. Coordenador usa comunidade_id. */
   const getEffectiveParoquiaId = useCallback(async (): Promise<string | null> => {
     if (paroquiaId) return paroquiaId;
     if (!supabase) return null;
@@ -201,60 +205,87 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return data?.id || null;
   }, [paroquiaId, supabase]);
 
-  // ─── Fetch all data ───────────────────────────────────────────────────────
+  // ─── Fetch all data (isolado por comunidade) ───────────────────────────────
 
   const refreshData = useCallback(async () => {
     if (!useDb || !supabase) return;
     setLoading(true);
 
-    const effectiveParoquiaId = paroquiaId || (await getEffectiveParoquiaId()) || '';
-    if (!effectiveParoquiaId) {
-      try {
-        const turmasRes = await supabase.from('turmas').select('*').eq('pastoral_type', pastoralType);
-        const turmasData = (turmasRes.data || []).map(rowToTurma);
-        setTurmas(turmasData);
-        setMateriais((await supabase.from('materiais').select('*').order('created_at', { ascending: false })).data?.map(rowToMaterial) || []);
-      } catch (_) {}
+    const isAdmin = user?.role === 'Administrador Paroquial' || user?.role === UserRole.ADMIN;
+    if (isAdmin) {
+      setTurmas([]);
+      setCatequizandos([]);
+      setCatequistas([]);
+      setEncontros([]);
+      setPresencas([]);
+      setMateriais([]);
+      setAvisos([]);
+      setLoading(false);
+      return;
+    }
+
+    const effectiveComunidadeId = comunidadeId;
+    if (!effectiveComunidadeId) {
+      setTurmas([]);
+      setCatequizandos([]);
+      setCatequistas([]);
+      setEncontros([]);
+      setPresencas([]);
+      setMateriais([]);
+      setAvisos([]);
       setLoading(false);
       return;
     }
 
     try {
-      const [
-        paroquiaRes,
-        turmasRes,
-        participantesRes,
-        lideresRes,
-        materiaisRes,
-        avisosRes,
-      ] = await Promise.all([
-        supabase.from('paroquias').select('*').eq('id', effectiveParoquiaId).single(),
-        supabase.from('turmas').select('*').eq('pastoral_type', pastoralType),
-        supabase.from('participantes').select('*').eq('paroquia_id', effectiveParoquiaId).eq('pastoral_type', pastoralType).order('nome_completo'),
-        supabase.from('lideres').select('*').eq('paroquia_id', effectiveParoquiaId).eq('pastoral_type', pastoralType).order('nome'),
-        supabase.from('materiais').select('*').order('created_at', { ascending: false }),
-        supabase.from('avisos').select('*').eq('paroquia_id', effectiveParoquiaId).order('created_at', { ascending: false }),
+      const [turmasRes, comunidadesRes] = await Promise.all([
+        supabase.from('turmas').select('*').eq('comunidade_id', effectiveComunidadeId).eq('pastoral_type', pastoralType),
+        supabase.from('comunidades').select('*, paroquias(*)').eq('id', effectiveComunidadeId).single(),
       ]);
 
-      if (paroquiaRes.data) {
+      const turmasData = (turmasRes.data || []).map(rowToTurma);
+      const turmaIds = turmasData.map(t => t.id);
+
+      const comunidadeData = comunidadesRes.data;
+      const paroquiaData = comunidadeData?.paroquias;
+      if (paroquiaData) {
         setParoquia({
-          id: paroquiaRes.data.id,
-          diocese_id: paroquiaRes.data.diocese_id || '',
-          nome: paroquiaRes.data.nome,
-          endereco: paroquiaRes.data.endereco || '',
-          telefone: paroquiaRes.data.telefone || '',
+          id: paroquiaData.id,
+          diocese_id: paroquiaData.diocese_id || '',
+          nome: paroquiaData.nome,
+          endereco: paroquiaData.endereco || '',
+          telefone: paroquiaData.telefone || '',
         });
       }
 
-      const turmasData = (turmasRes.data || []).map(rowToTurma);
       setTurmas(turmasData);
-      setCatequizandos((participantesRes.data || []).map(rowToParticipante));
-      setCatequistas((lideresRes.data || []).map(rowToLider));
+
+      let participantesData: any[] = [];
+      let lideresData: any[] = [];
+      if (turmaIds.length > 0) {
+        const [participantesRes, lideresRes] = await Promise.all([
+          supabase.from('participantes').select('*').in('turma_id', turmaIds).eq('pastoral_type', pastoralType).order('nome_completo'),
+          effectiveComunidadeId
+            ? supabase.from('lideres').select('*').or(`turma_id.in.(${turmaIds.join(',')}),comunidade_id.eq.${effectiveComunidadeId}`).eq('pastoral_type', pastoralType).order('nome')
+            : supabase.from('lideres').select('*').in('turma_id', turmaIds).eq('pastoral_type', pastoralType).order('nome'),
+        ]);
+        participantesData = participantesRes.data || [];
+        lideresData = lideresRes.data || [];
+      } else if (effectiveComunidadeId) {
+        const lideresRes = await supabase.from('lideres').select('*').eq('comunidade_id', effectiveComunidadeId).eq('pastoral_type', pastoralType).order('nome');
+        lideresData = lideresRes.data || [];
+      }
+
+      const [materiaisRes, avisosRes] = await Promise.all([
+        supabase.from('materiais').select('*').eq('comunidade_id', effectiveComunidadeId).order('created_at', { ascending: false }),
+        supabase.from('avisos').select('*').eq('comunidade_id', effectiveComunidadeId).order('created_at', { ascending: false }),
+      ]);
+
+      setCatequizandos(participantesData.map(rowToParticipante));
+      setCatequistas(lideresData.map(rowToLider));
       setMateriais((materiaisRes.data || []).map(rowToMaterial));
       setAvisos((avisosRes.data || []).map(rowToAviso));
 
-      // Fetch encontros for all turmas
-      const turmaIds = turmasData.map(t => t.id);
       if (turmaIds.length > 0) {
         const encontrosRes = await supabase
           .from('encontros')
@@ -277,13 +308,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       setLoading(false);
     }
-  }, [useDb, paroquiaId, pastoralType, getEffectiveParoquiaId]);
+  }, [useDb, comunidadeId, pastoralType, user?.role]);
 
   useEffect(() => {
     if (user) {
       refreshData();
     }
   }, [user, refreshData, pastoralType]);
+
+  useEffect(() => {
+    if (!user) return;
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshData();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    const interval = setInterval(refreshData, 5 * 60 * 1000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      clearInterval(interval);
+    };
+  }, [user, refreshData]);
 
   // ─── CRUD: Participantes ──────────────────────────────────────────────────
 
@@ -295,7 +339,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     if (!supabase) return;
 
-    const effectiveParoquiaId = await getEffectiveParoquiaId();
+    const effectiveParoquiaId = paroquia.id || paroquiaId || (await getEffectiveParoquiaId());
     if (!effectiveParoquiaId) {
       const newId = Date.now().toString();
       setCatequizandos(prev => [...prev, { ...data, id: newId }]);
@@ -311,6 +355,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
     setCatequizandos(prev => [...prev, rowToParticipante(inserted)]);
+  };
+
+  // ─── Update Participante ─────────────────────────────────────────────────
+
+  const updateCatequizando = async (catequizando: Catequizando) => {
+    if (!useDb) {
+      setCatequizandos(prev => prev.map(c => c.id === catequizando.id ? catequizando : c));
+      return;
+    }
+    if (!supabase) return;
+
+    const { error } = await supabase.from('participantes').update({
+      turma_id: catequizando.turma_id || null,
+      nome_completo: catequizando.nome_completo,
+      data_nascimento: catequizando.data_nascimento || null,
+      telefone: catequizando.telefone || null,
+      sacramentos: catequizando.sacramentos,
+      observacoes: catequizando.observacoes_pastorais || '',
+      responsaveis: catequizando.responsaveis || [],
+    }).eq('id', catequizando.id);
+
+    if (error) { console.error('Erro ao atualizar participante:', error); return; }
+    setCatequizandos(prev => prev.map(c => c.id === catequizando.id ? catequizando : c));
   };
 
   // ─── CRUD: Famílias (local only por enquanto) ─────────────────────────────
@@ -330,14 +397,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     if (!supabase) return;
 
-    const effectiveParoquiaId = await getEffectiveParoquiaId();
+    const effectiveParoquiaId = paroquiaId || paroquia.id || (await getEffectiveParoquiaId());
+    const effectiveComunidadeId = comunidadeId;
     if (!effectiveParoquiaId) {
       const newId = Date.now().toString();
       setCatequistas(prev => [...prev, { ...data, id: newId }]);
       return;
     }
 
-    const row = liderToRow(data, effectiveParoquiaId, pastoralType);
+    const row = liderToRow(data, effectiveParoquiaId, effectiveComunidadeId, pastoralType);
     const { data: inserted, error } = await supabase.from('lideres').insert(row).select().single();
     if (error) {
       console.error('Erro ao salvar líder:', error);
@@ -441,7 +509,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!supabase) return;
 
     const { data: inserted, error } = await supabase.from('materiais').insert({
-      paroquia_id: paroquiaId || null,
+      paroquia_id: paroquia.id || paroquiaId || null,
+      comunidade_id: comunidadeId || null,
       titulo: data.titulo,
       descricao: data.descricao,
       tipo: data.tipo,
@@ -464,7 +533,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!supabase) return;
 
     const { data: inserted, error } = await supabase.from('avisos').insert({
-      paroquia_id: paroquiaId,
+      paroquia_id: paroquia.id || paroquiaId,
+      comunidade_id: comunidadeId || null,
       titulo: data.titulo,
       conteudo: data.conteudo,
       prioridade: data.prioridade || 'Normal',
@@ -496,8 +566,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     if (!supabase) return;
 
+    const effectiveComunidadeId = data.comunidade_id || comunidadeId;
+    const effectiveParoquiaId = paroquia.id || paroquiaId || (await getEffectiveParoquiaId());
+
     const { data: inserted, error } = await supabase.from('turmas').insert({
-      comunidade_id: data.comunidade_id || null,
+      comunidade_id: effectiveComunidadeId || null,
+      paroquia_id: effectiveParoquiaId || null,
       pastoral_type: pastoralType,
       etapa_nome: data.etapa_nome || '',
       ano: data.ano,
@@ -506,7 +580,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       horario: data.horario,
     }).select().single();
 
-    if (error) { console.error(error); return; }
+    if (error) {
+      console.error('Erro ao salvar turma:', error);
+      const newId = Date.now().toString();
+      setTurmas(prev => [...prev, { ...data, id: newId }]);
+      return;
+    }
     setTurmas(prev => [...prev, rowToTurma(inserted)]);
   };
 
@@ -523,6 +602,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       avisos,
       loading,
       addCatequizando,
+      updateCatequizando,
       addFamilia,
       addCatequista,
       addEncontro,

@@ -83,11 +83,15 @@ ALTER TABLE comunidades ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Authenticated users can read comunidades"
   ON comunidades FOR SELECT TO authenticated USING (true);
 
+-- Perfis: adicionar comunidade_id (após comunidades existir)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS comunidade_id UUID REFERENCES comunidades(id) ON DELETE SET NULL;
+
 -- ─── 5. Turmas / Grupos / Núcleos ──────────────────────────────────────────────
 
 CREATE TABLE turmas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  comunidade_id UUID REFERENCES comunidades(id) ON DELETE CASCADE,
+  comunidade_id UUID NOT NULL REFERENCES comunidades(id) ON DELETE CASCADE,
+  paroquia_id UUID REFERENCES paroquias(id) ON DELETE CASCADE,
   pastoral_type pastoral_type NOT NULL,
   etapa_nome TEXT NOT NULL,
   ano INT NOT NULL DEFAULT EXTRACT(YEAR FROM now()),
@@ -98,6 +102,8 @@ CREATE TABLE turmas (
 );
 
 CREATE INDEX idx_turmas_pastoral ON turmas(pastoral_type);
+CREATE INDEX idx_turmas_paroquia ON turmas(paroquia_id);
+CREATE INDEX idx_turmas_comunidade ON turmas(comunidade_id);
 
 ALTER TABLE turmas ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Authenticated users can read turmas"
@@ -215,6 +221,7 @@ CREATE POLICY "Authenticated users can update presencas"
 CREATE TABLE materiais (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   paroquia_id UUID REFERENCES paroquias(id),
+  comunidade_id UUID REFERENCES comunidades(id) ON DELETE SET NULL,
   titulo TEXT NOT NULL,
   descricao TEXT,
   tipo TEXT CHECK (tipo IN ('PDF', 'LINK', 'VIDEO', 'DOC')),
@@ -234,6 +241,7 @@ CREATE POLICY "Authenticated users can insert materiais"
 CREATE TABLE avisos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   paroquia_id UUID NOT NULL REFERENCES paroquias(id),
+  comunidade_id UUID REFERENCES comunidades(id) ON DELETE SET NULL,
   titulo TEXT NOT NULL,
   conteudo TEXT NOT NULL,
   prioridade TEXT DEFAULT 'Normal',

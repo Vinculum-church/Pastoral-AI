@@ -2,7 +2,6 @@
 
 export enum PastoralType {
   CATEQUESE = 'catequese',
-  PERSEVERANCA = 'perseveranca',
   FIEL = 'fiel',
   PASTORAL_CRISTA = 'pastoral_crista',
 }
@@ -212,6 +211,21 @@ export interface Aviso {
   prioridade: AvisoPriority;
 }
 
+export interface Solicitacao {
+  id: string;
+  paroquia_id: string;
+  comunidade_id: string;
+  email_fiel: string;
+  nome_completo: string;
+  data_nascimento: string;
+  telefone: string;
+  responsaveis: ResponsavelSimples[];
+  sacramentos: { batismo: boolean; eucaristia: boolean; crisma: boolean };
+  observacoes: string;
+  status: 'pendente' | 'aprovada' | 'rejeitada';
+  created_at: string;
+}
+
 // Navigation Types
 export enum ViewState {
   DASHBOARD = 'dashboard',
@@ -224,6 +238,6 @@ export enum ViewState {
   MATERIAIS = 'materiais',
   ESCOLA_FORMACAO = 'escola_formacao',
   RELATORIOS = 'relatorios',
-  SUBSCRIPTION = 'subscription',
+  SOLICITACOES = 'solicitacoes',
   ADMIN = 'admin'
 }

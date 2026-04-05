@@ -11,8 +11,18 @@ interface PastoralContextType {
 
 const PastoralContext = createContext<PastoralContextType | undefined>(undefined);
 
+function normalizePastoralType(type: PastoralType | string): PastoralType {
+  if (type === 'perseveranca') return PastoralType.CATEQUESE;
+  if (Object.values(PastoralType).includes(type as PastoralType)) return type as PastoralType;
+  return PastoralType.CATEQUESE;
+}
+
 export const PastoralProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [pastoralType, setPastoralType] = useState<PastoralType>(PastoralType.CATEQUESE);
+  const [pastoralType, _setPastoralType] = useState<PastoralType>(PastoralType.CATEQUESE);
+
+  const setPastoralType = (type: PastoralType | string) => {
+    _setPastoralType(normalizePastoralType(type));
+  };
 
   const config = PASTORAL_CONFIGS[pastoralType];
   const labels = config.labels;

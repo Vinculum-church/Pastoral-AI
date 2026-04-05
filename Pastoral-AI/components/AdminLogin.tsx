@@ -12,23 +12,33 @@ const AdminLogin: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasAttemptedLogin, setHasAttemptedLogin] = useState(false);
 
   // Se logou mas não é admin, mostrar erro e deslogar
+  // Só executa se o usuário tentou fazer login nesta sessão
   useEffect(() => {
-    if (user && user.role !== UserRole.ADMIN && (user as { role?: string }).role !== 'admin') {
+    if (!user || !hasAttemptedLogin) return;
+    
+    const roleStr = String(user.role || '').toLowerCase();
+    const isAdmin = user.role === UserRole.ADMIN || roleStr === 'admin' || roleStr.includes('admin');
+    
+    if (!isAdmin) {
       setError('Apenas administradores podem acessar esta área. Faça login com uma conta de administrador.');
       logout();
+      setHasAttemptedLogin(false);
     }
-  }, [user, logout]);
+  }, [user, logout, hasAttemptedLogin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setHasAttemptedLogin(true);
 
     const result = await login(email, password, 'admin');
     if (!result.success) {
       setError(result.error || 'Erro ao fazer login.');
+      setHasAttemptedLogin(false);
     }
     setLoading(false);
   };

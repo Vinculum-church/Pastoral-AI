@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Users, AlertCircle, BookOpen, Gift, Shield, Plus, Trash2, X, Bell, ChevronRight, Clock, Search, MessageSquare, UserPlus, Sparkles, BarChart3, Church } from 'lucide-react';
+import { Calendar, Users, AlertCircle, BookOpen, Gift, Shield, Plus, Trash2, X, Bell, ChevronRight, Clock, Search, MessageSquare, UserPlus, Sparkles, BarChart3, Church, Inbox } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { usePastoral } from '../contexts/PastoralContext';
@@ -11,15 +11,22 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
   const { user } = useAuth();
-  const { encontros, catequizandos, turmas, catequistas, avisos, addAviso, removeAviso } = useData();
+  const { encontros, catequizandos, turmas, catequistas, avisos, solicitacoes, addAviso, removeAviso } = useData();
   const { labels } = usePastoral();
   const [isAvisoModalOpen, setIsAvisoModalOpen] = useState(false);
   const [newAviso, setNewAviso] = useState({ titulo: '', conteudo: '', prioridade: AvisoPriority.NORMAL });
 
-  const nextMeeting = encontros.find(e => !e.concluido);
-  
   const isCoordenador = user?.role === UserRole.COORDENADOR;
-  const totalParticipantes = catequizandos.length;
+
+  const myTurmaIds = isCoordenador
+    ? turmas.map(t => t.id)
+    : turmas.filter(t => catequistas.some(c => c.email === user?.email && c.turma_id === t.id)).map(t => t.id);
+
+  const myEncontros = encontros.filter(e => myTurmaIds.includes(e.turma_id));
+  const myCatequizandos = isCoordenador ? catequizandos : catequizandos.filter(c => myTurmaIds.includes(c.turma_id));
+
+  const nextMeeting = myEncontros.find(e => !e.concluido);
+  const totalParticipantes = myCatequizandos.length;
   const statCard2Value = isCoordenador ? catequistas.length : turmas.length;
   const statCard2Label = isCoordenador ? labels.lideres : labels.turmas;
   
@@ -158,6 +165,27 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
         <QuickAction icon={Bell} label="Notificações" onClick={() => setView(ViewState.MARKETING)} colorClass="bg-indigo-50 text-indigo-600" />
       </div>
 
+      {/* Solicitações pendentes */}
+      {isCoordenador && solicitacoes.length > 0 && (
+        <button
+          onClick={() => setView(ViewState.SOLICITACOES)}
+          className="w-full bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between hover:shadow-md transition-all group cursor-pointer"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-amber-100 rounded-xl text-amber-700">
+              <Inbox size={22} />
+            </div>
+            <div className="text-left">
+              <p className="font-bold text-amber-900 text-sm">
+                {solicitacoes.length} solicitaç{solicitacoes.length === 1 ? 'ão' : 'ões'} de matrícula pendente{solicitacoes.length !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-amber-700">Clique para revisar e aprovar</p>
+            </div>
+          </div>
+          <ChevronRight size={20} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
+        </button>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard 
@@ -207,7 +235,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
           
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="divide-y divide-gray-50">
-              {encontros.map((enc) => (
+              {myEncontros.map((enc) => (
                 <div key={enc.id} role="button" tabIndex={0} onClick={() => setView(ViewState.ENCONTROS)} onKeyDown={(e) => e.key === 'Enter' && setView(ViewState.ENCONTROS)} className="p-5 hover:bg-gray-50 transition-colors group cursor-pointer flex items-center justify-between">
                   <div className="flex items-start space-x-5">
                     <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl shadow-sm border ${

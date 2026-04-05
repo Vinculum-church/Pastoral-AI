@@ -1,22 +1,35 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Calendar, CheckCircle, Clock, FileText, ChevronRight, Plus, X, Users, Check, AlertCircle, BookOpen, Sparkles, Loader2, Save, Printer, Edit3, Wand2, ArrowRight, Book, Feather, Eye, Pencil } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
+import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
-import { Encontro, LiturgicalColor, Presenca } from '../types';
+import { Encontro, LiturgicalColor, Presenca, UserRole } from '../types';
 import { getLiturgicalSuggestions, LiturgySuggestion, generateMeetingScript } from '../services/geminiService';
 import RoteiroViewer from './RoteiroViewer';
 
 const MeetingManager: React.FC = () => {
-  const { turmas, encontros, catequizandos, presencas, addEncontro, updatePresenca, updateEncontro, paroquia } = useData();
+  const { turmas, encontros, catequizandos, catequistas, presencas, addEncontro, updatePresenca, updateEncontro, paroquia } = useData();
+  const { user } = useAuth();
   const { labels } = usePastoral();
+
+  const isCoordenador = user?.role === UserRole.COORDENADOR || user?.role === UserRole.ADMIN;
+
+  const visibleTurmas = isCoordenador
+    ? turmas
+    : turmas.filter(t => catequistas.some(c => c.email === user?.email && c.turma_id === t.id));
   
-  const [selectedTurma, setSelectedTurma] = useState(turmas[0]?.id || '');
+  const [selectedTurma, setSelectedTurma] = useState(visibleTurmas[0]?.id || '');
   const [selectedEncontro, setSelectedEncontro] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
-  // New State: "Chamada Mode" to make the attendance UI distinct
   const [isChamadaMode, setIsChamadaMode] = useState(false);
+
+  useEffect(() => {
+    if (visibleTurmas.length > 0 && !visibleTurmas.find(t => t.id === selectedTurma)) {
+      setSelectedTurma(visibleTurmas[0].id);
+    }
+  }, [visibleTurmas, selectedTurma]);
 
   // Liturgy Preview State (AI)
   const [aiSuggestion, setAiSuggestion] = useState<LiturgySuggestion | null>(null);
@@ -42,8 +55,8 @@ const MeetingManager: React.FC = () => {
   const activeEncontros = encontros.filter(e => e.turma_id === selectedTurma);
   const activeCatequizandos = catequizandos.filter(c => c.turma_id === selectedTurma);
   const currentEncontroDetails = activeEncontros.find(e => e.id === selectedEncontro);
-  const activeTurmaName = turmas.find(t => t.id === selectedTurma)?.etapa_nome || 'Turma';
-  const activeTurmaObj = turmas.find(t => t.id === selectedTurma);
+  const activeTurmaName = visibleTurmas.find(t => t.id === selectedTurma)?.etapa_nome || 'Turma';
+  const activeTurmaObj = visibleTurmas.find(t => t.id === selectedTurma);
 
   // Sincroniza localRoteiro ao trocar de encontro; cancela debounce pendente
   useEffect(() => {
@@ -189,6 +202,26 @@ const MeetingManager: React.FC = () => {
     setCustomPrompt('');
   };
 
+  if (visibleTurmas.length === 0) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+          <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Calendar size={40} className="text-gray-300" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-600">
+            {isCoordenador ? `Nenhum ${labels.turma} cadastrado` : `Você não está vinculado a nenhum ${labels.turma.toLowerCase()}`}
+          </h3>
+          <p className="text-sm mt-2 text-gray-400 max-w-md mx-auto">
+            {isCoordenador
+              ? `Crie um ${labels.turma.toLowerCase()} na seção "Estrutura" para começar a agendar ${labels.encontros.toLowerCase()}.`
+              : `Peça ao coordenador para vincular você a um ${labels.turma.toLowerCase()}.`}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 relative animate-fade-in">
       <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
@@ -206,7 +239,7 @@ const MeetingManager: React.FC = () => {
             }}
             className="appearance-none bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-church-500 focus:border-church-500 block w-64 p-2.5 pr-8 font-medium"
             >
-            {turmas.map(turma => (
+            {visibleTurmas.map(turma => (
                 <option key={turma.id} value={turma.id}>{turma.etapa_nome} - {turma.dia_encontro}</option>
             ))}
             </select>

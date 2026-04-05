@@ -22,7 +22,6 @@ interface Comunidade {
 
 const SEGMENTOS: { type: PastoralType; config: PastoralConfig }[] = [
   { type: PastoralType.CATEQUESE, config: PASTORAL_CONFIGS[PastoralType.CATEQUESE] },
-  { type: PastoralType.PERSEVERANCA, config: PASTORAL_CONFIGS[PastoralType.PERSEVERANCA] },
   { type: PastoralType.PASTORAL_CRISTA, config: PASTORAL_CONFIGS[PastoralType.PASTORAL_CRISTA] },
 ];
 
@@ -139,13 +138,13 @@ const AdminPanel: React.FC = () => {
     setSubmitting(true);
     try {
       const token = await getSessionToken();
+      console.log('AdminPanel: Token obtido:', !!token);
       if (!token) {
         setError('Sessão expirada. Faça login novamente.');
         setSubmitting(false);
         return;
       }
-      const base = import.meta.env.DEV ? '' : (import.meta.env.BASE_URL || '');
-      const res = await fetch(`${base}/api/admin/create-coordinator`, {
+      const res = await fetch('/api/admin/create-coordinator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -157,15 +156,30 @@ const AdminPanel: React.FC = () => {
           pastoralType: form.pastoralType,
         }),
       });
-      const data = await res.json().catch(() => ({}));
+      
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch (e) {
+        console.error('AdminPanel: Erro ao parsear resposta:', e);
+      }
+      
+      console.log('AdminPanel: Resposta da API:', { status: res.status, data });
+      
       if (!res.ok) {
-        setError(data.error || 'Erro ao criar coordenador.');
+        // Mostrar erro mas NÃO fazer logout - apenas exibir a mensagem
+        const errorMsg = data.error || `Erro ${res.status} ao criar coordenador.`;
+        if (data.debug) {
+          console.error('AdminPanel: Debug info:', data.debug);
+        }
+        setError(errorMsg);
         setSubmitting(false);
         return;
       }
       setSuccess('Coordenador criado com sucesso. Ele pode acessar o sistema com o e-mail e senha definidos.');
       setForm({ ...form, email: '', password: '', nome: '', paroquiaId: '', comunidadeId: '' });
     } catch (err: any) {
+      console.error('AdminPanel: Erro na requisição:', err);
       setError(err.message || 'Erro ao criar coordenador.');
     }
     setSubmitting(false);
@@ -361,7 +375,7 @@ const AdminPanel: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">Segmento / Pastoral</label>
-            <p className="text-xs text-gray-500 mb-2">O coordenador da Catequese pode ser diferente do da Perseverança.</p>
+            <p className="text-xs text-gray-500 mb-2">Selecione a pastoral do coordenador.</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {SEGMENTOS.map(({ type, config }) => (
                 <button
@@ -374,7 +388,7 @@ const AdminPanel: React.FC = () => {
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
-                  <span className="text-lg">{type === PastoralType.CATEQUESE ? '📖' : type === PastoralType.PERSEVERANCA ? '🤝' : '⛪'}</span>
+                  <span className="text-lg">{type === PastoralType.CATEQUESE ? '📖' : '⛪'}</span>
                   <p className="font-bold text-xs mt-1">{config.labels.pastoralNome}</p>
                 </button>
               ))}

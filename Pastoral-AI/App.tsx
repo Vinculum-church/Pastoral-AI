@@ -7,9 +7,9 @@ import PeopleManager from './components/PeopleManager';
 import AiPlanner from './components/AiPlanner';
 import ResourceLibrary from './components/ResourceLibrary';
 import AttendanceReport from './components/AttendanceReport';
-import SubscriptionManager from './components/SubscriptionManager';
 import EstruturaView from './components/EstruturaView';
 import EscolaFormacaoView from './components/EscolaFormacaoView';
+import SolicitacoesView from './components/SolicitacoesView';
 import AdminPanel from './components/AdminPanel';
 import AdminLogin from './components/AdminLogin';
 import Login from './components/Login';
@@ -45,10 +45,17 @@ const AdminLogoutButton: React.FC = () => {
   );
 };
 
+/** Verifica se o usuário é admin */
+function checkIsAdmin(user: any): boolean {
+  if (!user) return false;
+  const roleStr = String(user.role || '').toLowerCase();
+  return user.role === UserRole.ADMIN || roleStr === 'admin' || roleStr.includes('admin');
+}
+
 /** Rota /admin: exige credenciais. Se não logado como admin, mostra formulário de login. */
 const AdminRoute: React.FC = () => {
   const { user, loading } = useAuth();
-  const isAdmin = user?.role === UserRole.ADMIN || (user as any)?.role === 'admin';
+  const isAdmin = checkIsAdmin(user);
 
   if (loading) {
     return (
@@ -110,8 +117,6 @@ const AuthenticatedApp: React.FC = () => {
         return <MeetingManager />;
       case ViewState.RELATORIOS:
         return <AttendanceReport />;
-      case ViewState.SUBSCRIPTION:
-        return <SubscriptionManager />;
       case ViewState.PARTICIPANTES:
         return <PeopleManager initialTab="participantes" />;
       case ViewState.MARKETING:
@@ -126,6 +131,8 @@ const AuthenticatedApp: React.FC = () => {
         return <EscolaFormacaoView />;
       case ViewState.ESTRUTURA:
         return <EstruturaView />;
+      case ViewState.SOLICITACOES:
+        return <SolicitacoesView />;
       default:
         return <Dashboard />;
     }
@@ -140,7 +147,7 @@ const AuthenticatedApp: React.FC = () => {
 
 const Root: React.FC = () => {
   const { user, isAuthenticated, loading } = useAuth();
-  const isAdmin = user?.role === UserRole.ADMIN || (user as { role?: string })?.role === 'admin';
+  const isAdmin = checkIsAdmin(user);
 
   if (loading) {
     return (

@@ -28,9 +28,14 @@ function resolveRole(profileRole: unknown): UserRole {
     ? (profileRole as { value: string }).value
     : profileRole;
   const r = String(raw ?? '').toLowerCase().trim();
+  
+  // Verificação direta no mapa
   if (roleMap[r]) return roleMap[r];
+  
   // Fallback: se contém "admin" em qualquer variação
   if (r.includes('admin')) return UserRole.ADMIN;
+  if (r.includes('coord')) return UserRole.COORDENADOR;
+  
   return UserRole.LIDER;
 }
 

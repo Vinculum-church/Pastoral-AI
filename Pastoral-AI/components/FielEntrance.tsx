@@ -1,30 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { Church, Mail, MapPin, Loader2, ChevronRight, Heart } from 'lucide-react';
 import { useFiel } from '../contexts/FielContext';
+import { isSupabaseConfigured } from '../services/supabaseClient';
 import { MOCK_PAROQUIAS, MOCK_COMUNIDADES } from '../constants';
 import { Paroquia, Comunidade } from '../types';
 
 const FielEntrance: React.FC = () => {
   const { setSession } = useFiel();
+  const hasDb = isSupabaseConfigured();
   const [email, setEmail] = useState('');
   const [paroquiaId, setParoquiaId] = useState('');
   const [comunidadeId, setComunidadeId] = useState('');
-  const [paroquias, setParoquias] = useState<Paroquia[]>(MOCK_PAROQUIAS);
+  const [paroquias, setParoquias] = useState<Paroquia[]>([]);
+  const [allComunidades, setAllComunidades] = useState<Comunidade[]>([]);
   const [comunidades, setComunidades] = useState<Comunidade[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
-    setParoquias(MOCK_PAROQUIAS);
-    if (!paroquiaId && MOCK_PAROQUIAS.length > 0) {
-      setParoquiaId(MOCK_PAROQUIAS[0].id);
-    }
-  }, []);
+    const loadData = async () => {
+      if (hasDb) {
+        try {
+          const res = await fetch('/api/public/paroquias-comunidades');
+          const data = await res.json();
+          const dbParoquias = (data.paroquias || []).map((r: any) => ({
+            id: r.id,
+            diocese_id: '',
+            nome: r.nome,
+            endereco: r.endereco || '',
+            telefone: r.telefone || '',
+          }));
+          const dbComunidades = (data.comunidades || []).map((r: any) => ({
+            id: r.id,
+            paroquia_id: r.paroquia_id,
+            nome: r.nome,
+            padroeiro: r.padroeiro || '',
+          }));
+          if (dbParoquias.length > 0) {
+            setParoquias(dbParoquias);
+            setAllComunidades(dbComunidades);
+            setParoquiaId(dbParoquias[0].id);
+            setLoadingData(false);
+            return;
+          }
+        } catch (err) {
+          console.error('Erro ao buscar paróquias/comunidades:', err);
+        }
+      }
+      setParoquias(MOCK_PAROQUIAS);
+      setAllComunidades(MOCK_COMUNIDADES);
+      if (MOCK_PAROQUIAS.length > 0) setParoquiaId(MOCK_PAROQUIAS[0].id);
+      setLoadingData(false);
+    };
+    loadData();
+  }, [hasDb]);
 
   useEffect(() => {
-    const filtered = MOCK_COMUNIDADES.filter(c => c.paroquia_id === paroquiaId);
+    const filtered = allComunidades.filter(c => c.paroquia_id === paroquiaId);
     setComunidades(filtered);
     setComunidadeId(filtered.length > 0 ? filtered[0].id : '');
-  }, [paroquiaId]);
+  }, [paroquiaId, allComunidades]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,10 +156,10 @@ const FielEntrance: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={!isValidEmail || !paroquiaId || !comunidadeId || loading}
+                disabled={!isValidEmail || !paroquiaId || !comunidadeId || loading || loadingData}
                 className="w-full bg-purple-600 text-white py-3.5 rounded-xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
               >
-                {loading ? <Loader2 size={20} className="animate-spin" /> : 'Entrar'}
+                {loading || loadingData ? <Loader2 size={20} className="animate-spin" /> : 'Entrar'}
               </button>
             </form>
 

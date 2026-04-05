@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Church, Plus, X, Users, Calendar, Clock } from 'lucide-react';
+import { Church, Plus, X, Users, Calendar, Clock, Trash2 } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
+import { UserRole } from '../types';
 
 const EstruturaView: React.FC = () => {
-  const { turmas, addTurma } = useData();
+  const { turmas, catequizandos, encontros, addTurma, removeTurma } = useData();
   const { user } = useAuth();
   const { labels, config } = usePastoral();
+  const isCoordenador = user?.role === UserRole.COORDENADOR || user?.role === UserRole.ADMIN;
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const currentYear = new Date().getFullYear();
   const [form, setForm] = useState({
@@ -92,10 +96,13 @@ const EstruturaView: React.FC = () => {
               </button>
             </div>
           ) : (
-            turmas.map((t) => (
+            turmas.map((t) => {
+              const turmaParticipantes = catequizandos.filter(c => c.turma_id === t.id).length;
+              const turmaEncontros = encontros.filter(e => e.turma_id === t.id).length;
+              return (
               <div
                 key={t.id}
-                className="p-5 hover:bg-gray-50/50 transition-colors flex flex-wrap items-center gap-4"
+                className="p-5 hover:bg-gray-50/50 transition-colors flex items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-12 h-12 rounded-xl bg-church-50 text-church-600 flex items-center justify-center shrink-0">
@@ -114,14 +121,83 @@ const EstruturaView: React.FC = () => {
                       </span>
                       {t.ano && <span>Ano {t.ano}</span>}
                       {t.faixa_etaria && <span>{t.faixa_etaria}</span>}
+                      <span className="text-xs text-gray-400">
+                        {turmaParticipantes} {turmaParticipantes === 1 ? labels.participante : labels.participantes} · {turmaEncontros} {turmaEncontros === 1 ? labels.encontro : labels.encontros}
+                      </span>
                     </div>
                   </div>
                 </div>
+                {isCoordenador && (
+                  <button
+                    type="button"
+                    onClick={() => { setDeletingId(t.id); setDeleteError(''); }}
+                    className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 cursor-pointer"
+                    title={`Excluir ${labels.turma.toLowerCase()}`}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
+
+      {/* Modal Confirmar Exclusão */}
+      {deletingId && (() => {
+        const turmaToDelete = turmas.find(t => t.id === deletingId);
+        const participantCount = catequizandos.filter(c => c.turma_id === deletingId).length;
+        const encontroCount = encontros.filter(e => e.turma_id === deletingId).length;
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+              <div className="bg-red-600 p-5 flex justify-between items-center text-white">
+                <h3 className="font-bold text-lg">Excluir {labels.turma}</h3>
+                <button type="button" onClick={() => setDeletingId(null)} className="hover:bg-white/20 rounded-full p-1">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-gray-700">
+                  Tem certeza que deseja excluir <strong>{turmaToDelete?.etapa_nome}</strong>?
+                </p>
+                {(participantCount > 0 || encontroCount > 0) && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+                    Esta {labels.turma.toLowerCase()} possui <strong>{participantCount}</strong> {participantCount === 1 ? labels.participante.toLowerCase() : labels.participantes.toLowerCase()} e <strong>{encontroCount}</strong> {encontroCount === 1 ? labels.encontro.toLowerCase() : labels.encontros.toLowerCase()}. Todos serão removidos.
+                  </div>
+                )}
+                {deleteError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">{deleteError}</div>
+                )}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setDeletingId(null)}
+                    className="flex-1 py-3 rounded-xl font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await removeTurma(deletingId);
+                        setDeletingId(null);
+                      } catch (err: any) {
+                        setDeleteError(err.message || 'Erro ao excluir.');
+                      }
+                    }}
+                    className="flex-1 bg-red-600 text-white py-3 rounded-xl font-semibold hover:bg-red-700 transition-colors cursor-pointer"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal Nova Turma */}
       {isModalOpen && (

@@ -9,6 +9,7 @@ import {
   Paroquia,
   MaterialApoio,
   Aviso,
+  Solicitacao,
   UserRole,
 } from '../types';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
@@ -36,6 +37,7 @@ interface DataContextType {
   presencas: Presenca[];
   materiais: MaterialApoio[];
   avisos: Aviso[];
+  solicitacoes: Solicitacao[];
   loading: boolean;
 
   addCatequizando: (data: Omit<Catequizando, 'id'>) => Promise<void>;
@@ -49,6 +51,9 @@ interface DataContextType {
   addAviso: (data: Omit<Aviso, 'id' | 'data_publicacao'>) => Promise<void>;
   removeAviso: (id: string) => Promise<void>;
   addTurma: (data: Omit<Turma, 'id'>) => Promise<void>;
+  removeTurma: (id: string) => Promise<void>;
+  aprovarSolicitacao: (solicitacao: Solicitacao, turmaId: string) => Promise<void>;
+  rejeitarSolicitacao: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -191,6 +196,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [materiais, setMateriais] = useState<MaterialApoio[]>(useDb ? [] : MOCK_MATERIAIS);
   const [avisos, setAvisos] = useState<Aviso[]>(useDb ? [] : MOCK_AVISOS);
   const [turmas, setTurmas] = useState<Turma[]>(useDb ? [] : MOCK_TURMAS);
+  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
   const [paroquia, setParoquia] = useState<Paroquia>(MOCK_PAROQUIA);
 
   const paroquiaId = user?.parish_id || '';
@@ -238,8 +244,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     try {
+      const turmaTypes = pastoralType === 'catequese' ? ['catequese', 'perseveranca'] : [pastoralType];
       const [turmasRes, comunidadesRes] = await Promise.all([
-        supabase.from('turmas').select('*').eq('comunidade_id', effectiveComunidadeId).eq('pastoral_type', pastoralType),
+        supabase.from('turmas').select('*').eq('comunidade_id', effectiveComunidadeId).in('pastoral_type', turmaTypes),
         supabase.from('comunidades').select('*, paroquias(*)').eq('id', effectiveComunidadeId).single(),
       ]);
 
@@ -264,27 +271,42 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       let lideresData: any[] = [];
       if (turmaIds.length > 0) {
         const [participantesRes, lideresRes] = await Promise.all([
-          supabase.from('participantes').select('*').in('turma_id', turmaIds).eq('pastoral_type', pastoralType).order('nome_completo'),
+          supabase.from('participantes').select('*').in('turma_id', turmaIds).in('pastoral_type', turmaTypes).order('nome_completo'),
           effectiveComunidadeId
-            ? supabase.from('lideres').select('*').or(`turma_id.in.(${turmaIds.join(',')}),comunidade_id.eq.${effectiveComunidadeId}`).eq('pastoral_type', pastoralType).order('nome')
-            : supabase.from('lideres').select('*').in('turma_id', turmaIds).eq('pastoral_type', pastoralType).order('nome'),
+            ? supabase.from('lideres').select('*').or(`turma_id.in.(${turmaIds.join(',')}),comunidade_id.eq.${effectiveComunidadeId}`).in('pastoral_type', turmaTypes).order('nome')
+            : supabase.from('lideres').select('*').in('turma_id', turmaIds).in('pastoral_type', turmaTypes).order('nome'),
         ]);
         participantesData = participantesRes.data || [];
         lideresData = lideresRes.data || [];
       } else if (effectiveComunidadeId) {
-        const lideresRes = await supabase.from('lideres').select('*').eq('comunidade_id', effectiveComunidadeId).eq('pastoral_type', pastoralType).order('nome');
+        const lideresRes = await supabase.from('lideres').select('*').eq('comunidade_id', effectiveComunidadeId).in('pastoral_type', turmaTypes).order('nome');
         lideresData = lideresRes.data || [];
       }
 
-      const [materiaisRes, avisosRes] = await Promise.all([
+      const [materiaisRes, avisosRes, solicitacoesRes] = await Promise.all([
         supabase.from('materiais').select('*').eq('comunidade_id', effectiveComunidadeId).order('created_at', { ascending: false }),
         supabase.from('avisos').select('*').eq('comunidade_id', effectiveComunidadeId).order('created_at', { ascending: false }),
+        supabase.from('solicitacoes').select('*').eq('comunidade_id', effectiveComunidadeId).eq('status', 'pendente').order('created_at', { ascending: false }),
       ]);
 
       setCatequizandos(participantesData.map(rowToParticipante));
       setCatequistas(lideresData.map(rowToLider));
       setMateriais((materiaisRes.data || []).map(rowToMaterial));
       setAvisos((avisosRes.data || []).map(rowToAviso));
+      setSolicitacoes((solicitacoesRes.data || []).map((r: any) => ({
+        id: r.id,
+        paroquia_id: r.paroquia_id,
+        comunidade_id: r.comunidade_id,
+        email_fiel: r.email_fiel || '',
+        nome_completo: r.nome_completo,
+        data_nascimento: r.data_nascimento || '',
+        telefone: r.telefone || '',
+        responsaveis: r.responsaveis || [],
+        sacramentos: r.sacramentos || { batismo: false, eucaristia: false, crisma: false },
+        observacoes: r.observacoes || '',
+        status: r.status || 'pendente',
+        created_at: r.created_at || '',
+      })));
 
       if (turmaIds.length > 0) {
         const encontrosRes = await supabase
@@ -556,6 +578,34 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAvisos(prev => prev.filter(a => a.id !== id));
   };
 
+  // ─── CRUD: Solicitações ──────────────────────────────────────────────────
+
+  const aprovarSolicitacao = async (solicitacao: Solicitacao, turmaId: string) => {
+    await addCatequizando({
+      turma_id: turmaId,
+      nome_completo: solicitacao.nome_completo,
+      data_nascimento: solicitacao.data_nascimento,
+      telefone: solicitacao.telefone,
+      nome_responsavel: solicitacao.responsaveis[0]?.nome || '',
+      telefone_responsavel: solicitacao.responsaveis[0]?.telefone || '',
+      responsaveis: solicitacao.responsaveis,
+      sacramentos: solicitacao.sacramentos,
+      observacoes_pastorais: solicitacao.observacoes,
+    });
+
+    if (useDb && supabase) {
+      await supabase.from('solicitacoes').update({ status: 'aprovada' }).eq('id', solicitacao.id);
+    }
+    setSolicitacoes(prev => prev.filter(s => s.id !== solicitacao.id));
+  };
+
+  const rejeitarSolicitacao = async (id: string) => {
+    if (useDb && supabase) {
+      await supabase.from('solicitacoes').update({ status: 'rejeitada' }).eq('id', id);
+    }
+    setSolicitacoes(prev => prev.filter(s => s.id !== id));
+  };
+
   // ─── CRUD: Turmas ─────────────────────────────────────────────────────────
 
   const addTurma = async (data: Omit<Turma, 'id'>) => {
@@ -589,6 +639,24 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setTurmas(prev => [...prev, rowToTurma(inserted)]);
   };
 
+  const removeTurma = async (id: string) => {
+    if (!useDb) {
+      setTurmas(prev => prev.filter(t => t.id !== id));
+      return;
+    }
+    if (!supabase) return;
+
+    const { error } = await supabase.from('turmas').delete().eq('id', id);
+    if (error) {
+      console.error('Erro ao remover turma:', error);
+      throw new Error(error.message);
+    }
+    setTurmas(prev => prev.filter(t => t.id !== id));
+    setCatequizandos(prev => prev.filter(c => c.turma_id !== id));
+    setEncontros(prev => prev.filter(e => e.turma_id !== id));
+    setCatequistas(prev => prev.map(c => c.turma_id === id ? { ...c, turma_id: undefined } : c));
+  };
+
   return (
     <DataContext.Provider value={{
       paroquia,
@@ -600,6 +668,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       presencas,
       materiais,
       avisos,
+      solicitacoes,
       loading,
       addCatequizando,
       updateCatequizando,
@@ -612,6 +681,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addAviso,
       removeAviso,
       addTurma,
+      removeTurma,
+      aprovarSolicitacao,
+      rejeitarSolicitacao,
       refreshData,
     }}>
       {children}

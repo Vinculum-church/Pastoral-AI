@@ -35,6 +35,17 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  app.get("/api/public/paroquias-comunidades", async (req, res) => {
+    if (!supabaseAdmin) {
+      return res.json({ paroquias: [], comunidades: [] });
+    }
+    const [pRes, cRes] = await Promise.all([
+      supabaseAdmin.from("paroquias").select("id, nome").order("nome"),
+      supabaseAdmin.from("comunidades").select("id, paroquia_id, nome").order("nome"),
+    ]);
+    res.json({ paroquias: pRes.data || [], comunidades: cRes.data || [] });
+  });
+
   // Convite de usuário (apenas coordenador)
   app.post("/api/invite-user", async (req, res) => {
     if (!supabaseAdmin) {
@@ -246,7 +257,7 @@ async function startServer() {
       return res.status(400).json({ error: "A senha deve ter pelo menos 6 caracteres." });
     }
 
-    const validPastoral = ["catequese", "perseveranca", "pastoral_crista"].includes(pastoralType) ? pastoralType : "catequese";
+    const validPastoral = ["catequese", "pastoral_crista"].includes(pastoralType) ? pastoralType : "catequese";
 
     try {
       const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);

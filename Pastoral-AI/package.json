@@ -1,14 +1,16 @@
 {
-  "name": "copy-of-gestão-pastoral-catequese",
+  "name": "vinculum-pastoral",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build",
     "start": "node server.ts",
     "lint": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name vinculum-pastoral",
+    "pages:dev": "wrangler pages dev dist --compatibility-date=2024-01-01"
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
@@ -26,11 +28,13 @@
     "tsx": "^4.21.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240208.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "wrangler": "^3.28.0"
   }
 }

@@ -1,8 +1,9 @@
 import React from 'react';
-import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, CreditCard, GraduationCap } from 'lucide-react';
+import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, GraduationCap, Inbox } from 'lucide-react';
 import { ViewState, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
+import { useData } from '../contexts/DataContext';
 
 interface LayoutProps {
   currentView: ViewState;
@@ -14,8 +15,9 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const { user, logout } = useAuth();
   const { labels } = usePastoral();
+  const { solicitacoes } = useData();
 
-  const NavItem = ({ view, icon: Icon, label }: { view: ViewState; icon: any; label: string }) => {
+  const NavItem = ({ view, icon: Icon, label, badge }: { view: ViewState; icon: any; label: string; badge?: number }) => {
     const isActive = currentView === view;
     return (
       <button
@@ -33,7 +35,14 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
           <Icon size={20} className={`${isActive ? 'text-white' : 'text-gray-400 group-hover:text-church-600 transition-colors'}`} />
           <span className={`font-medium text-sm ${isActive ? 'font-semibold' : ''}`}>{label}</span>
         </div>
-        {isActive && <ChevronRight size={16} className="text-white/80" />}
+        <div className="flex items-center space-x-2">
+          {badge && badge > 0 ? (
+            <span className={`min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold rounded-full px-1.5 ${
+              isActive ? 'bg-white text-church-700' : 'bg-red-500 text-white'
+            }`}>{badge}</span>
+          ) : null}
+          {isActive && <ChevronRight size={16} className="text-white/80" />}
+        </div>
       </button>
     );
   };
@@ -104,7 +113,6 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
             <NavItem view={ViewState.IA_ASSISTANT} icon={Sparkles} label="Assistente Pastoral IA" />
             <NavItem view={ViewState.ESCOLA_FORMACAO} icon={GraduationCap} label="Escola Pastoral de Formação" />
             <NavItem view={ViewState.MATERIAIS} icon={FolderOpen} label="Materiais de Apoio" />
-            <NavItem view={ViewState.SUBSCRIPTION} icon={CreditCard} label="Assinatura & Planos" />
           </div>
 
           <div>
@@ -113,6 +121,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
             <NavItem view={ViewState.MARKETING} icon={MessageCircle} label="Marketing" />
             {isCoordenador && (
               <>
+                <NavItem view={ViewState.SOLICITACOES} icon={Inbox} label="Solicitações" badge={solicitacoes.length} />
                 <NavItem view={ViewState.ESTRUTURA} icon={Church} label={`${labels.turmas} / Estrutura`} />
                 <NavItem view={ViewState.LIDERES} icon={BookOpen} label={labels.equipe} />
               </>

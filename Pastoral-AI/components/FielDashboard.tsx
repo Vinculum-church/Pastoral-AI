@@ -11,6 +11,7 @@ import {
   Cross,
   ChevronRight,
   ArrowLeft,
+  UserPlus,
 } from 'lucide-react';
 import { useFiel } from '../contexts/FielContext';
 import FielRevista from './fiel/FielRevista';
@@ -19,8 +20,9 @@ import FielCampanhas from './fiel/FielCampanhas';
 import FielDizimo from './fiel/FielDizimo';
 import FielLiturgia from './fiel/FielLiturgia';
 import FielTerços from './fiel/FielTerços';
+import FielMatricula from './fiel/FielMatricula';
 
-type FielSection = 'home' | 'revista' | 'avisos' | 'campanhas' | 'dizimo' | 'liturgia' | 'tercos';
+type FielSection = 'home' | 'revista' | 'avisos' | 'campanhas' | 'dizimo' | 'liturgia' | 'tercos' | 'matricula';
 
 const FielCard = ({
   icon: Icon,
@@ -77,6 +79,8 @@ const FielDashboard: React.FC = () => {
         return <FielLiturgia />;
       case 'tercos':
         return <FielTerços />;
+      case 'matricula':
+        return <FielMatricula />;
       default:
         return (
           <>
@@ -94,6 +98,12 @@ const FielDashboard: React.FC = () => {
             </div>
 
             <div className="grid gap-4">
+              <FielCard
+                icon={UserPlus}
+                title="Matricular Catequizando"
+                description="Solicite a matrícula de um catequizando na comunidade"
+                onClick={() => setSection('matricula')}
+              />
               <FielCard
                 icon={BookOpen}
                 title="Revista da Comunidade"

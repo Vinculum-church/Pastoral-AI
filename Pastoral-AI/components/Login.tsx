@@ -4,7 +4,6 @@ import { Church, Lock, Mail, Loader2, Info, BookOpen, Heart, ChevronRight, Spark
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
 import { PastoralType } from '../types';
-import LogoMark from './LogoMark';
 import { PASTORAL_CONFIGS } from '../constants';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 
@@ -75,7 +74,7 @@ const Login: React.FC = () => {
       <div className="max-w-lg w-full relative">
         <div className="text-center mb-8">
           <div className="mx-auto w-20 h-20 bg-white/10 border border-gold-300/40 rounded-3xl flex items-center justify-center mb-4 text-gold-200 shadow-lg shadow-church-950/30 backdrop-blur">
-            <LogoMark size={50} />
+            <Church size={40} />
           </div>
           <h1 className="font-serif text-4xl font-semibold text-white tracking-tight">PastoriAI</h1>
           <p className="text-church-200 text-sm mt-1 font-medium">Gestão Pastoral Inteligente</p>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, GraduationCap, Inbox, Home, ClipboardCheck } from 'lucide-react';
 import { ViewState, UserRole } from '../types';
-import LogoMark from './LogoMark';
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
 import { useData } from '../contexts/DataContext';
@@ -62,7 +61,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
       <div className="md:hidden bg-white/80 backdrop-blur-md sticky top-0 border-b border-gray-200 p-4 flex justify-between items-center z-30 shadow-sm">
         <div className="flex items-center space-x-2 text-church-900">
           <div className="bg-church-800 p-1.5 rounded-lg text-gold-200">
-            <LogoMark size={20} />
+            <Church size={20} />
           </div>
           <span className="font-serif font-semibold text-xl tracking-tight">PastoriAI</span>
         </div>
@@ -95,7 +94,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
         <div className="p-8 pb-4">
           <div className="flex items-center space-x-3 text-church-900 mb-8">
             <div className="bg-gradient-to-br from-church-700 to-church-900 p-2.5 rounded-xl text-gold-200 shadow-lg shadow-church-200">
-              <LogoMark size={28} />
+              <Church size={28} />
             </div>
             <div>
               <h1 className="font-serif font-semibold text-2xl leading-none tracking-tight text-gray-900">PastoriAI</h1>

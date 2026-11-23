@@ -198,7 +198,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
             <h2>${title}</h2>
           </div>
           <table>${tableContent}</table>
-          <div class="footer">Gerado pelo sistema Vinculum - ${new Date().toLocaleDateString()}</div>
+          <div class="footer">Gerado pelo sistema PastoriAI - ${new Date().toLocaleDateString()}</div>
           <script>window.print();</script>
         </body>
       </html>

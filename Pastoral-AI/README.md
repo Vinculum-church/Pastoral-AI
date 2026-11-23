@@ -1,4 +1,4 @@
-# Vinculum Pastoral
+# PastoriAI
 
 Sistema de gestão pastoral para catequese, perseverança e outras pastorais da Igreja Católica.
 
@@ -21,7 +21,7 @@ Sistema de gestão pastoral para catequese, perseverança e outras pastorais da 
 
 ## Visão Geral
 
-O Vinculum Pastoral é uma plataforma completa para gestão de pastorais, permitindo:
+O PastoriAI é uma plataforma completa para gestão de pastorais, permitindo:
 
 - **Coordenadores**: Gerenciar turmas, catequistas, encontros e catequizandos
 - **Catequistas/Líderes**: Registrar presenças, gerar roteiros pastorais com IA

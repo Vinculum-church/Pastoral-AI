@@ -63,7 +63,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
           <div className="bg-church-600 p-1.5 rounded-lg text-white">
             <Church size={20} />
           </div>
-          <span className="font-bold text-lg tracking-tight">Vinculum</span>
+          <span className="font-bold text-lg tracking-tight">PastoriAI</span>
         </div>
         {/* No celular o menu completo abre pelo "Mais" da barra inferior; aqui só o botão de fechar */}
         {isMobileMenuOpen && (
@@ -97,7 +97,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
               <Church size={28} />
             </div>
             <div>
-              <h1 className="font-bold text-xl leading-none tracking-tight text-gray-900">Vinculum</h1>
+              <h1 className="font-bold text-xl leading-none tracking-tight text-gray-900">PastoriAI</h1>
               <p className="text-[11px] text-church-600 font-semibold uppercase tracking-wider mt-1.5">{labels.pastoralDescricao}</p>
             </div>
           </div>
@@ -149,7 +149,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
             <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
             <span>Voltar ao login</span>
           </button>
-          <p className="text-center text-[10px] text-gray-300">Versão 3.0 • Vinculum</p>
+          <p className="text-center text-[10px] text-gray-300">Versão 3.0 • PastoriAI</p>
         </div>
       </aside>
 

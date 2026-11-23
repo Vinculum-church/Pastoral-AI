@@ -76,7 +76,7 @@ const AiPlanner: React.FC = () => {
             ${result}
           </div>
 
-          <div class="footer">Gerado pela Inteligência Artificial Pastoral - Vinculum</div>
+          <div class="footer">Gerado pela Inteligência Artificial Pastoral - PastoriAI</div>
           <script>window.print();</script>
         </body>
       </html>

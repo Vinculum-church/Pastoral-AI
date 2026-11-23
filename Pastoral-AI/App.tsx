@@ -25,7 +25,7 @@ import { FielProvider } from './contexts/FielContext';
 const AdminDashboard: React.FC = () => (
   <div className="min-h-screen bg-marfim">
     <div className="bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center">
-      <span className="font-bold text-gray-900">Vinculum • Painel Admin</span>
+      <span className="font-bold text-gray-900">PastoriAI • Painel Admin</span>
       <AdminLogoutButton />
     </div>
     <div className="max-w-7xl mx-auto p-4 md:p-8 lg:p-12">

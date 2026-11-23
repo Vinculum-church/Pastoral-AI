@@ -56,7 +56,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
   const isCoordenador = user?.role === UserRole.COORDENADOR;
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] font-sans flex flex-col md:flex-row">
+    <div className="min-h-screen bg-marfim font-sans flex flex-col md:flex-row">
       {/* Mobile Header */}
       <div className="md:hidden bg-white/80 backdrop-blur-md sticky top-0 border-b border-gray-200 p-4 flex justify-between items-center z-30 shadow-sm">
         <div className="flex items-center space-x-2 text-church-900">
@@ -86,7 +86,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed md:sticky top-0 left-0 h-screen w-72 bg-[#F9FAFB] border-r border-gray-200/60 
+        fixed md:sticky top-0 left-0 h-screen w-72 bg-marfim-claro border-r border-gray-200/60 
         transform transition-transform duration-300 ease-in-out z-30 overflow-hidden flex flex-col shadow-xl md:shadow-none
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
@@ -141,7 +141,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-4 bg-gradient-to-t from-[#F9FAFB] to-transparent space-y-2">
+        <div className="p-4 bg-gradient-to-t from-marfim-claro to-transparent space-y-2">
           <button 
             onClick={logout}
             className="w-full flex items-center justify-center space-x-2 text-sm font-medium text-gray-500 hover:text-church-600 hover:bg-church-50 p-3 rounded-xl transition-all duration-200 group border border-gray-200 hover:border-church-200"

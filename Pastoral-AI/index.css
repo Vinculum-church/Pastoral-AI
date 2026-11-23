@@ -1,24 +1,64 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');
 @import "tailwindcss";
 
+/*
+  Identidade visual Vinculum — inspirada na arte sacra e nos apps de oração:
+  - Azul mariano profundo (confiança, Maria) como cor principal;
+  - Dourado litúrgico como destaque (formação, celebração);
+  - Fundo marfim e cinzas quentes (papel, pergaminho) em vez de cinza frio de escritório;
+  - Títulos com serifa (Fraunces), texto em Inter para leitura fácil no celular.
+*/
 @theme {
-  --color-church-50: #f4f6f8;
-  --color-church-100: #e4e7eb;
-  --color-church-500: #3b82f6;
-  --color-church-600: #2563eb;
-  --color-church-900: #1e3a8a;
-  
-  --color-liturgical-green: #15803d;
-  --color-liturgical-purple: #7e22ce;
-  --color-liturgical-red: #b91c1c;
-  --color-liturgical-white: #ca8a04;
-  
+  --color-church-50: #eef3fa;
+  --color-church-100: #d9e4f3;
+  --color-church-200: #b6cae8;
+  --color-church-300: #87a7d6;
+  --color-church-400: #5a82bf;
+  --color-church-500: #3a63a6;
+  --color-church-600: #2a4e8c;
+  --color-church-700: #223f72;
+  --color-church-800: #1c335c;
+  --color-church-900: #16284a;
+  --color-church-950: #0e1a31;
+
+  --color-gold-50: #fbf6e9;
+  --color-gold-100: #f5eacb;
+  --color-gold-200: #ecd8a0;
+  --color-gold-300: #e3c77e;
+  --color-gold-400: #d6b25f;
+  --color-gold-500: #c9a04a;
+  --color-gold-600: #a9822f;
+  --color-gold-700: #86651f;
+  --color-gold-800: #634a17;
+  --color-gold-900: #463410;
+
+  --color-marfim: #f7f4ee;
+  --color-marfim-claro: #fbf9f5;
+
+  /* Cinzas quentes (tom de papel) no lugar do cinza frio padrão */
+  --color-gray-50: #faf9f7;
+  --color-gray-100: #f3f1ed;
+  --color-gray-200: #e7e4de;
+  --color-gray-300: #d6d2ca;
+  --color-gray-400: #a8a29a;
+  --color-gray-500: #78716a;
+  --color-gray-600: #57524c;
+  --color-gray-700: #44403b;
+  --color-gray-800: #2b2825;
+  --color-gray-900: #1c1a17;
+
+  --color-liturgical-green: #2f7d4f;
+  --color-liturgical-purple: #6b3fa0;
+  --color-liturgical-red: #b42b2b;
+  --color-liturgical-white: #c9a04a;
+  --color-liturgical-rose: #d46a92;
+
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", serif;
+  --font-serif: "Fraunces", Georgia, serif;
 }
 
 @layer base {
   body {
-    @apply bg-gray-50;
+    @apply bg-marfim text-gray-800 antialiased;
   }
 }

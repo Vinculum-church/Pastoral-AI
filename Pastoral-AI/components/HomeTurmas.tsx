@@ -7,6 +7,7 @@ import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
 import { Catequizando, Encontro, UserRole, ViewState } from '../types';
+import { tempoLiturgico, COR_TEMPO } from '../liturgia';
 
 /** Turma escolhida fica guardada para abrir a chamada já nela e lembrar na próxima visita. */
 export const TURMA_KEY = 'vinculum:turma';
@@ -56,6 +57,7 @@ const HomeTurmas: React.FC<Props> = ({ setView }) => {
   const { user } = useAuth();
   const { labels } = usePastoral();
   const isCoordenador = user?.role === UserRole.COORDENADOR || user?.role === UserRole.ADMIN;
+  const tempo = useMemo(() => tempoLiturgico(), []);
 
   // Catequista vê só a(s) turma(s) dele; coordenador vê todas.
   const visibleTurmas = useMemo(
@@ -144,22 +146,38 @@ const HomeTurmas: React.FC<Props> = ({ setView }) => {
   return (
     <div className="max-w-xl mx-auto space-y-5 pb-28 md:pb-8">
       {/* Saudação + convite discreto à Escola Pastoral */}
-      <header className="space-y-3">
-        <div>
-          <p className="text-sm text-gray-500">Paz e bem,</p>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{greetingName(user?.name || '')} 👋</h1>
-        </div>
-        <button
-          onClick={() => setView(ViewState.ESCOLA_FORMACAO)}
-          className="w-full flex items-center gap-3 rounded-2xl border border-amber-200/70 bg-amber-50/70 px-4 py-2.5 text-left hover:bg-amber-50 transition-colors"
-        >
-          <GraduationCap size={18} className="text-amber-600 shrink-0" />
-          <span className="text-sm text-amber-900 flex-1 min-w-0">
-            <span className="font-semibold">Escola Pastoral</span>
-            <span className="text-amber-800/80"> · formação para catequistas</span>
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-church-800 via-church-900 to-church-950 text-white px-5 pt-5 pb-4 shadow-lg shadow-church-900/20">
+        {/* Vitral discreto: raios dourados e uma cruz, só como textura */}
+        <svg aria-hidden="true" className="absolute -right-10 -top-10 w-56 h-56 text-gold-300/15" viewBox="0 0 200 200" fill="none">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <line key={i} x1="100" y1="100" x2={100 + 100 * Math.cos((i * Math.PI) / 6)} y2={100 + 100 * Math.sin((i * Math.PI) / 6)} stroke="currentColor" strokeWidth="1.2" />
+          ))}
+          <circle cx="100" cy="100" r="34" stroke="currentColor" strokeWidth="1.2" />
+          <circle cx="100" cy="100" r="62" stroke="currentColor" strokeWidth="1" />
+          <path d="M100 78v44M84 94h32" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+
+        <div className="relative">
+          <span className={`inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium ${COR_TEMPO[tempo.cor].chip}`}>
+            <span className={`w-2 h-2 rounded-full ${COR_TEMPO[tempo.cor].dot} ring-2 ring-white/20`} />
+            {tempo.nome}{tempo.aviso ? <span className="text-white/60"> · {tempo.aviso}</span> : null}
           </span>
-          <span className="text-xs font-semibold text-amber-700 flex items-center gap-0.5 shrink-0">Ver <ChevronRight size={14} /></span>
-        </button>
+          <p className="mt-3 text-sm text-church-200">Paz e bem,</p>
+          <h1 className="font-serif text-[28px] leading-tight font-semibold tracking-tight">{greetingName(user?.name || '')}</h1>
+          <p className="text-xs text-church-200/80 mt-0.5 truncate">{[user?.comunidade, user?.paroquia].filter(Boolean).join(' · ')}</p>
+
+          <button
+            onClick={() => setView(ViewState.ESCOLA_FORMACAO)}
+            className="mt-4 w-full flex items-center gap-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-gold-300/25 px-3.5 py-2.5 text-left transition-colors"
+          >
+            <span className="w-8 h-8 rounded-xl bg-gold-400/20 text-gold-200 flex items-center justify-center shrink-0"><GraduationCap size={17} /></span>
+            <span className="flex-1 min-w-0 leading-tight">
+              <span className="block text-sm font-semibold text-gold-100">Escola Pastoral</span>
+              <span className="block text-xs text-white/65 truncate">Formação para catequistas</span>
+            </span>
+            <ChevronRight size={16} className="text-gold-200 shrink-0" />
+          </button>
+        </div>
       </header>
 
       {/* Solicitações pendentes (coordenador) */}
@@ -194,7 +212,7 @@ const HomeTurmas: React.FC<Props> = ({ setView }) => {
                   onClick={() => setTurmaId(t.id)}
                   aria-pressed={ativa}
                   className={`snap-start shrink-0 min-w-[150px] rounded-2xl px-4 py-3 text-left transition-all border ${
-                    ativa ? 'bg-gray-900 text-white border-gray-900 shadow-lg' : 'bg-white text-gray-800 border-gray-200 hover:border-gray-300'
+                    ativa ? 'bg-church-700 text-white border-church-700 shadow-lg shadow-church-900/15' : 'bg-white text-gray-800 border-gray-200 hover:border-church-200'
                   }`}
                 >
                   <p className="font-semibold text-sm leading-tight">{t.etapa_nome || labels.turma}</p>
@@ -265,7 +283,7 @@ const HomeTurmas: React.FC<Props> = ({ setView }) => {
 
             <button
               onClick={irParaChamada}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-church-600 text-white font-semibold py-3.5 hover:bg-church-900 transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-church-700 text-white font-semibold py-3.5 hover:bg-church-800 active:scale-[0.99] transition-all shadow-md shadow-church-900/15"
             >
               <ClipboardCheck size={18} /> {chamada && !chamada.feita ? 'Fazer a chamada' : 'Abrir chamada e encontros'}
             </button>
@@ -276,7 +294,7 @@ const HomeTurmas: React.FC<Props> = ({ setView }) => {
             <section className="rounded-3xl bg-white border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-5 pt-4 pb-3 flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-bold text-gray-900">Quem faltou</h2>
+                  <h2 className="font-serif text-lg font-semibold text-gray-900">Quem faltou</h2>
                   <p className="text-xs text-gray-500">Mande uma mensagem para a família e convide para voltar.</p>
                 </div>
                 {chamada.faltas.length > 1 && (
@@ -338,7 +356,7 @@ const HomeTurmas: React.FC<Props> = ({ setView }) => {
         onClick={() => setView(ViewState.MATERIAIS)}
         className="w-full flex items-center gap-3 rounded-2xl bg-white border border-gray-200 px-4 py-3.5 text-left hover:border-gray-300 transition-colors"
       >
-        <span className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><FolderOpen size={20} /></span>
+        <span className="w-10 h-10 rounded-xl bg-gold-50 text-gold-700 flex items-center justify-center"><FolderOpen size={20} /></span>
         <span className="flex-1">
           <span className="block text-sm font-semibold text-gray-900">Material de apoio</span>
           <span className="block text-xs text-gray-500">Roteiros, dinâmicas e liturgia para o encontro</span>

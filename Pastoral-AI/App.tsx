@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
+import HomeTurmas from './components/HomeTurmas';
 import MeetingManager from './components/MeetingManager';
 import PeopleManager from './components/PeopleManager';
 import AiPlanner from './components/AiPlanner';
@@ -112,6 +113,8 @@ const AuthenticatedApp: React.FC = () => {
   const renderView = () => {
     switch (currentView) {
       case ViewState.DASHBOARD:
+        return <HomeTurmas setView={setCurrentView} />;
+      case ViewState.VISAO_GERAL:
         return <Dashboard setView={setCurrentView} />;
       case ViewState.ENCONTROS:
         return <MeetingManager />;
@@ -134,7 +137,7 @@ const AuthenticatedApp: React.FC = () => {
       case ViewState.SOLICITACOES:
         return <SolicitacoesView />;
       default:
-        return <Dashboard />;
+        return <HomeTurmas setView={setCurrentView} />;
     }
   };
 

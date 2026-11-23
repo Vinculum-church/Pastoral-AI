@@ -1,4 +1,5 @@
 import express from "express";
+import http from "http";
 console.log("🚀 Starting server.ts...");
 import cors from "cors";
 import dotenv from "dotenv";
@@ -351,11 +352,18 @@ async function startServer() {
     res.json({ received: true });
   });
 
+  // Um único servidor HTTP: o Express e a atualização ao vivo (HMR) do Vite usam a mesma porta.
+  const httpServer = http.createServer(app);
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     console.log("🚀 Initializing Vite middleware...");
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        // Antes tentava a porta 24680 separada, que não subia; agora usa a mesma do app.
+        hmr: { server: httpServer, port: PORT, clientPort: PORT, host: "localhost" },
+      },
       appType: "spa",
     });
     console.log("✅ Vite middleware initialized.");
@@ -368,7 +376,7 @@ async function startServer() {
   }
 
   console.log(`📡 Attempting to listen on port ${PORT}...`);
-  app.listen(PORT, "0.0.0.0", () => {
+  httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
   });
 }

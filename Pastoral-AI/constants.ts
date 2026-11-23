@@ -85,6 +85,8 @@ export const MOCK_USERS: Record<string, User> = {
     role: UserRole.COORDENADOR,
     parish_id: 'p1',
     paroquia: 'Paróquia São Francisco de Assis',
+    comunidade_id: 'c1',
+    comunidade: 'Comunidade São José',
     pastoral_type: PastoralType.CATEQUESE,
     avatar: 'L'
   },
@@ -95,6 +97,8 @@ export const MOCK_USERS: Record<string, User> = {
     role: UserRole.LIDER,
     parish_id: 'p1',
     paroquia: 'Paróquia São Francisco de Assis',
+    comunidade_id: 'c1',
+    comunidade: 'Comunidade São José',
     pastoral_type: PastoralType.CATEQUESE,
     avatar: 'M'
   }
@@ -142,7 +146,7 @@ export const MOCK_CATEQUISTAS: Catequista[] = [
   { 
     id: 'cat1', 
     nome: 'Maria Silva', 
-    email: 'maria@email.com', 
+    email: 'cat@paroquia.com', 
     telefone: '(11) 99999-9999', 
     data_nascimento: '1980-05-15',
     comunidade_id: 'c1', 
@@ -240,16 +244,47 @@ export const MOCK_CATEQUIZANDOS: Catequizando[] = [
   },
 ];
 
+// ── Dados de demonstração (só usados quando o app roda sem banco) ─────────
+// Datas relativas a hoje para a tela inicial mostrar "último encontro" e "próximo".
+const isoDaysFromToday = (n: number) => {
+  const d = new Date(); d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const lastSaturdayOffset = (() => { const wd = new Date().getDay(); return -((wd + 1) % 7 || 7); })();
+
+const DEMO_NOMES: [string, string, string][] = [
+  ['Ana Clara Ribeiro', 'Patrícia Ribeiro', 'Mãe'], ['Davi Martins', 'Rogério Martins', 'Pai'],
+  ['Helena Almeida', 'Juliana Almeida', 'Mãe'], ['Miguel Ferreira', 'Sandra Ferreira', 'Avó'],
+  ['Sofia Rocha', 'Marcos Rocha', 'Pai'], ['Arthur Lima', 'Cláudia Lima', 'Mãe'],
+  ['Laura Gomes', 'Renata Gomes', 'Mãe'], ['Pedro Henrique Dias', 'Fábio Dias', 'Pai'],
+  ['Valentina Barros', 'Simone Barros', 'Mãe'],
+];
+MOCK_CATEQUIZANDOS.push(...DEMO_NOMES.map(([nome, resp, par], i) => ({
+  id: `d${i + 1}`, turma_id: 't1', familia_id: '', nome_completo: nome, data_nascimento: '2015-04-12', telefone: '',
+  nome_responsavel: resp, telefone_responsavel: `2799870${String(1000 + i * 37)}`,
+  responsaveis: [{ nome: resp, parentesco: par, telefone: `2799870${String(1000 + i * 37)}` }],
+  sacramentos: { batismo: true, eucaristia: false, crisma: false }, observacoes_pastorais: '',
+})));
+
 export const MOCK_ENCONTROS: Encontro[] = [
-  { id: 'enc1', turma_id: 't1', data: '2024-05-18', tema: 'A Criação', cor_liturgica: LiturgicalColor.GREEN, observacoes: '', concluido: true },
-  { id: 'enc2', turma_id: 't1', data: '2024-05-25', tema: 'Pecado Original', cor_liturgica: LiturgicalColor.GREEN, observacoes: '', concluido: true },
-  { id: 'enc3', turma_id: 't1', data: '2024-06-01', tema: 'A Promessa de Salvação', cor_liturgica: LiturgicalColor.GREEN, observacoes: '', concluido: false },
+  { id: 'enc1', turma_id: 't1', data: isoDaysFromToday(lastSaturdayOffset - 14), tema: 'A Criação', cor_liturgica: LiturgicalColor.GREEN, observacoes: '', concluido: true },
+  { id: 'enc2', turma_id: 't1', data: isoDaysFromToday(lastSaturdayOffset - 7), tema: 'A Aliança com Abraão', cor_liturgica: LiturgicalColor.GREEN, observacoes: '', concluido: true },
+  { id: 'enc3', turma_id: 't1', data: isoDaysFromToday(lastSaturdayOffset), tema: 'Jesus, o Bom Pastor', cor_liturgica: LiturgicalColor.GREEN, observacoes: '', concluido: true },
+  { id: 'enc4', turma_id: 't1', data: isoDaysFromToday(lastSaturdayOffset + 7), tema: 'A Última Ceia', cor_liturgica: LiturgicalColor.WHITE, observacoes: '', concluido: false },
+  { id: 'enc5', turma_id: 't2', data: isoDaysFromToday(lastSaturdayOffset + 1), tema: 'Os Dons do Espírito Santo', cor_liturgica: LiturgicalColor.RED, observacoes: '', concluido: false },
 ];
 
+// Último encontro da turma t1: 9 presentes, 2 faltas, 1 justificada.
+const FALTAS_ULTIMO = new Set(['a2', 'd4']);
+const JUSTIFICADA_ULTIMO = new Set(['d7']);
 export const MOCK_PRESENCAS: Presenca[] = [
   { id: 'p1', encontro_id: 'enc1', catequizando_id: 'a1', status: 'P' },
   { id: 'p2', encontro_id: 'enc1', catequizando_id: 'a2', status: 'F' },
   { id: 'p3', encontro_id: 'enc1', catequizando_id: 'a3', status: 'P' },
+  ...['a1', 'a2', 'a3', ...DEMO_NOMES.map((_, i) => `d${i + 1}`)].map((cid, i) => ({
+    id: `pu${i}`, encontro_id: 'enc3', catequizando_id: cid,
+    status: (FALTAS_ULTIMO.has(cid) ? 'F' : JUSTIFICADA_ULTIMO.has(cid) ? 'J' : 'P') as Presenca['status'],
+  })),
 ];
 
 export const MOCK_MATERIAIS: MaterialApoio[] = [

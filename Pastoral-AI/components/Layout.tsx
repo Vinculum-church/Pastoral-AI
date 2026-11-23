@@ -1,5 +1,5 @@
 import React from 'react';
-import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, GraduationCap, Inbox } from 'lucide-react';
+import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, GraduationCap, Inbox, Home, ClipboardCheck } from 'lucide-react';
 import { ViewState, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
@@ -13,6 +13,12 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  // Cada tela abre do topo (a rolagem fica no <main>, não na janela).
+  const mainRef = React.useRef<HTMLElement>(null);
+  React.useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
+    window.scrollTo({ top: 0 }); // no celular quem rola é a página
+  }, [currentView]);
   const { user, logout } = useAuth();
   const { labels } = usePastoral();
   const { solicitacoes } = useData();
@@ -59,12 +65,16 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
           </div>
           <span className="font-bold text-lg tracking-tight">Vinculum</span>
         </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 active:bg-gray-100 rounded-full text-gray-600 transition-colors hover:bg-gray-50"
-        >
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {/* No celular o menu completo abre pelo "Mais" da barra inferior; aqui só o botão de fechar */}
+        {isMobileMenuOpen && (
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Fechar menu"
+            className="p-2 active:bg-gray-100 rounded-full text-gray-600 transition-colors hover:bg-gray-50"
+          >
+            <X size={24} />
+          </button>
+        )}
       </div>
 
       {isMobileMenuOpen && (
@@ -107,7 +117,8 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
         <nav className="px-4 flex-1 overflow-y-auto no-scrollbar space-y-8">
           <div>
             <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Menu Principal</p>
-            <NavItem view={ViewState.DASHBOARD} icon={LayoutDashboard} label={isCoordenador ? "Visão Geral" : `Meu ${labels.turma}`} />
+            <NavItem view={ViewState.DASHBOARD} icon={Home} label="Início" />
+            {isCoordenador && <NavItem view={ViewState.VISAO_GERAL} icon={LayoutDashboard} label="Visão geral" />}
             <NavItem view={ViewState.ENCONTROS} icon={Calendar} label={`${labels.encontros} & Frequência`} />
             <NavItem view={ViewState.RELATORIOS} icon={BarChart3} label="Histórico & Relatórios" />
             <NavItem view={ViewState.IA_ASSISTANT} icon={Sparkles} label="Assistente Pastoral IA" />
@@ -143,11 +154,48 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto h-screen relative">
-        <div className="max-w-7xl mx-auto p-4 md:p-8 lg:p-12 pb-24">
+      <main ref={mainRef} className="flex-1 overflow-y-auto h-screen relative">
+        <div className="max-w-7xl mx-auto p-4 md:p-8 lg:p-12 pb-28 md:pb-24">
           {children}
         </div>
       </main>
+
+      {/* Barra inferior (celular): as tarefas do dia a dia a um toque */}
+      <nav
+        aria-label="Navegação principal"
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-gray-200"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
+        <div className="grid grid-cols-5">
+          {[
+            { view: ViewState.DASHBOARD, icon: Home, label: 'Início' },
+            { view: ViewState.ENCONTROS, icon: ClipboardCheck, label: 'Chamada' },
+            { view: ViewState.PARTICIPANTES, icon: Users, label: labels.turma },
+            { view: ViewState.MATERIAIS, icon: FolderOpen, label: 'Material' },
+          ].map(({ view, icon: Icon, label }) => {
+            const active = currentView === view;
+            return (
+              <button
+                key={view}
+                onClick={() => { setView(view); setIsMobileMenuOpen(false); }}
+                aria-current={active ? 'page' : undefined}
+                className={`flex flex-col items-center justify-center gap-0.5 py-2.5 text-[11px] font-medium ${active ? 'text-church-600' : 'text-gray-500'}`}
+              >
+                <Icon size={22} strokeWidth={active ? 2.4 : 2} />
+                <span className="truncate max-w-full px-1">{label}</span>
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="flex flex-col items-center justify-center gap-0.5 py-2.5 text-[11px] font-medium text-gray-500 relative"
+          >
+            <Menu size={22} />
+            <span>Mais</span>
+            {isCoordenador && solicitacoes.length > 0 && <span className="absolute top-1.5 right-1/4 w-2 h-2 rounded-full bg-red-500" />}
+          </button>
+        </div>
+      </nav>
     </div>
   );
 };

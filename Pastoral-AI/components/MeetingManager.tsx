@@ -18,7 +18,12 @@ const MeetingManager: React.FC = () => {
     ? turmas
     : turmas.filter(t => catequistas.some(c => c.email === user?.email && c.turma_id === t.id));
   
-  const [selectedTurma, setSelectedTurma] = useState(visibleTurmas[0]?.id || '');
+  // Abre na turma escolhida na tela inicial (se ainda for visível para este usuário).
+  const [selectedTurma, setSelectedTurma] = useState(() => {
+    let saved = '';
+    try { saved = localStorage.getItem('vinculum:turma') || ''; } catch { /* sem armazenamento */ }
+    return visibleTurmas.some(t => t.id === saved) ? saved : (visibleTurmas[0]?.id || '');
+  });
   const [selectedEncontro, setSelectedEncontro] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);

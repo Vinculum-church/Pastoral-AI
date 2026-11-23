@@ -229,6 +229,7 @@ export interface Solicitacao {
 // Navigation Types
 export enum ViewState {
   DASHBOARD = 'dashboard',
+  VISAO_GERAL = 'visao_geral',
   ESTRUTURA = 'estrutura',
   PARTICIPANTES = 'participantes',
   MARKETING = 'marketing',

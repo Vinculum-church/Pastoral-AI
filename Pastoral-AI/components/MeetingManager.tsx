@@ -111,27 +111,30 @@ const MeetingManager: React.FC = () => {
       return `${day}/${month}/${year}`;
   };
 
-  const togglePresenca = (catequizandoId: string) => {
-    if (!selectedEncontro) return;
-
-    const existingRecord = presencas.find(p => p.encontro_id === selectedEncontro && p.catequizando_id === catequizandoId);
-
-    if (existingRecord) {
-        const currentStatus = existingRecord.status;
-        const newStatus = currentStatus === 'P' ? 'F' : 'P';
-        updatePresenca({ ...existingRecord, status: newStatus });
-    } else {
-        updatePresenca({ 
-            id: Date.now().toString(), 
-            encontro_id: selectedEncontro, 
-            catequizando_id: catequizandoId, 
-            status: 'P' 
-        });
+  // No celular a lista de encontros fica em cima: rola até o encontro/chamada ao abrir.
+  useEffect(() => {
+    if (selectedEncontro && window.innerWidth < 1024) {
+      requestAnimationFrame(() => document.getElementById('painel-encontro')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
+  }, [selectedEncontro, isChamadaMode]);
+
+  // Marcação aparece na hora; o banco grava em segundo plano.
+  const [marcacaoLocal, setMarcacaoLocal] = useState<Record<string, 'P' | 'F' | 'J'>>({});
+
+  const setStatus = (catequizandoId: string, status: 'P' | 'F' | 'J') => {
+    if (!selectedEncontro) return;
+    setMarcacaoLocal(prev => ({ ...prev, [`${selectedEncontro}:${catequizandoId}`]: status }));
+    const existingRecord = presencas.find(p => p.encontro_id === selectedEncontro && p.catequizando_id === catequizandoId);
+    updatePresenca(existingRecord
+      ? { ...existingRecord, status }
+      : { id: `${Date.now()}-${catequizandoId}`, encontro_id: selectedEncontro, catequizando_id: catequizandoId, status });
+    try { navigator.vibrate?.(12); } catch { /* sem vibração */ }
   };
 
   const getStatus = (catequizandoId: string) => {
     if (!selectedEncontro) return null;
+    const local = marcacaoLocal[`${selectedEncontro}:${catequizandoId}`];
+    if (local) return local;
     const record = presencas.find(p => p.encontro_id === selectedEncontro && p.catequizando_id === catequizandoId);
     return record ? record.status : null;
   };
@@ -307,7 +310,7 @@ const MeetingManager: React.FC = () => {
         {/* Details / Attendance Area */}
         <div className="lg:col-span-2 space-y-6">
           {selectedEncontro && currentEncontroDetails ? (
-            <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 ${isChamadaMode ? 'ring-2 ring-church-500 shadow-xl' : ''}`}>
+            <div id="painel-encontro" className={`scroll-mt-20 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 ${isChamadaMode ? 'ring-2 ring-church-500 shadow-xl' : ''}`}>
                {/* HEADER DO ENCONTRO */}
                <div className={`p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${isChamadaMode ? 'bg-church-50' : 'bg-white'}`}>
                   <div className="flex-1 w-full">
@@ -373,49 +376,91 @@ const MeetingManager: React.FC = () => {
                
                <div className="p-6 bg-white min-h-[300px]">
                  {isChamadaMode ? (
-                     // ROLL CALL MODE INTERFACE
-                     <div className="space-y-6 animate-fade-in">
-                         <div className="bg-amber-50 p-4 rounded-xl flex items-start text-sm text-amber-900 border border-amber-100">
-                            <AlertCircle size={18} className="mt-0.5 mr-3 shrink-0 text-amber-600"/>
-                            <p>Modo de Chamada Ativo. Toque nos cartões para alternar a presença.</p>
+                     // CHAMADA RÁPIDA: um toque por nome (P / F / J)
+                     (() => {
+                       const marcados = activeCatequizandos.filter(al => getStatus(al.id));
+                       const nP = activeCatequizandos.filter(al => getStatus(al.id) === 'P').length;
+                       const nF = activeCatequizandos.filter(al => getStatus(al.id) === 'F').length;
+                       const nJ = activeCatequizandos.filter(al => getStatus(al.id) === 'J').length;
+                       const total = activeCatequizandos.length;
+                       const faltam = total - marcados.length;
+                       const pctMarcados = total ? Math.round((marcados.length / total) * 100) : 0;
+                       const OPCOES: { v: 'P' | 'F' | 'J'; label: string; on: string }[] = [
+                         { v: 'P', label: 'Presente', on: 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-200' },
+                         { v: 'F', label: 'Falta', on: 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-200' },
+                         { v: 'J', label: 'Justificada', on: 'bg-amber-400 text-amber-950 border-amber-400 shadow-md shadow-amber-200' },
+                       ];
+                       return (
+                     <div className="space-y-4 animate-fade-in">
+                         {/* Progresso + atalhos */}
+                         <div className="sticky top-16 md:top-0 z-10 -mx-6 px-6 py-3 bg-white/95 backdrop-blur border-b border-gray-100 space-y-2.5">
+                           <div className="flex items-center justify-between text-sm">
+                             <span className="font-semibold text-gray-800">{marcados.length} de {total} marcados</span>
+                             <span className="flex items-center gap-2 text-xs font-semibold tabular-nums">
+                               <span className="text-emerald-700">{nP} P</span>
+                               <span className="text-rose-600">{nF} F</span>
+                               <span className="text-amber-700">{nJ} J</span>
+                             </span>
+                           </div>
+                           <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                             <div className="h-full rounded-full bg-church-600 transition-all duration-300" style={{ width: `${pctMarcados}%` }} />
+                           </div>
+                           {faltam > 0 && (
+                             <div className="flex gap-2">
+                               <button
+                                 onClick={() => activeCatequizandos.filter(al => !getStatus(al.id)).forEach(al => setStatus(al.id, 'P'))}
+                                 className="flex-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 py-2 text-xs font-bold active:scale-[0.98] transition-transform"
+                               >
+                                 ✓ Restantes presentes ({faltam})
+                               </button>
+                               <button
+                                 onClick={() => activeCatequizandos.filter(al => !getStatus(al.id)).forEach(al => setStatus(al.id, 'F'))}
+                                 className="flex-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 py-2 text-xs font-bold active:scale-[0.98] transition-transform"
+                               >
+                                 ✕ Restantes com falta
+                               </button>
+                             </div>
+                           )}
                          </div>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                         <ul className="divide-y divide-gray-100 -mx-2">
                              {activeCatequizandos.map(aluno => {
                                  const status = getStatus(aluno.id);
-                                 const isPresent = status === 'P';
-                                 const isAbsent = status === 'F';
-                                 
+                                 const iniciais = aluno.nome_completo.trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
                                  return (
-                                     <button 
-                                        key={aluno.id}
-                                        onClick={() => togglePresenca(aluno.id)}
-                                        className={`p-4 rounded-2xl border-2 flex items-center justify-between transition-all duration-200 group
-                                            ${isPresent ? 'border-emerald-400 bg-emerald-50' : ''}
-                                            ${isAbsent ? 'border-red-200 bg-red-50' : ''}
-                                            ${!status ? 'border-gray-100 bg-white hover:border-gray-300' : ''}
-                                        `}
-                                     >
-                                         <div className="flex items-center">
-                                             <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm mr-4 transition-colors shadow-sm
-                                                 ${isPresent ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-100 text-gray-500'}
-                                             `}>
-                                                 {aluno.nome_completo.charAt(0)}
-                                             </div>
-                                             <div className="text-left">
-                                                 <p className={`font-bold text-base ${isPresent ? 'text-emerald-900' : 'text-gray-900'}`}>{aluno.nome_completo}</p>
-                                                 <p className="text-xs font-medium opacity-60 uppercase tracking-wide mt-1">{isPresent ? 'Presente' : isAbsent ? 'Ausente' : 'Não Marcado'}</p>
-                                             </div>
+                                     <li key={aluno.id} className={`px-2 py-3 flex items-center gap-3 transition-colors rounded-xl ${!status ? 'bg-church-50/40' : ''}`}>
+                                         <span className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${status === 'P' ? 'bg-emerald-100 text-emerald-800' : status === 'F' ? 'bg-rose-100 text-rose-700' : status === 'J' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500'}`}>
+                                             {iniciais}
+                                         </span>
+                                         <p className="flex-1 min-w-0 font-semibold text-sm text-gray-900 leading-tight line-clamp-2">{aluno.nome_completo}</p>
+                                         <div className="flex gap-1.5 shrink-0" role="group" aria-label={`Presença de ${aluno.nome_completo}`}>
+                                             {OPCOES.map(o => (
+                                                 <button
+                                                     key={o.v}
+                                                     onClick={() => setStatus(aluno.id, o.v)}
+                                                     aria-pressed={status === o.v}
+                                                     aria-label={o.label}
+                                                     title={o.label}
+                                                     className={`w-11 h-11 rounded-xl border-2 text-sm font-bold transition-all active:scale-90 ${status === o.v ? o.on : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'}`}
+                                                 >
+                                                     {o.v}
+                                                 </button>
+                                             ))}
                                          </div>
-                                         <div className="transform transition-transform group-active:scale-90">
-                                             {isPresent ? <CheckCircle className="text-emerald-500" size={28} fill="currentColor" stroke="white" /> : 
-                                              isAbsent ? <X className="text-red-400" size={24} /> :
-                                              <div className="w-6 h-6 rounded-full border-2 border-gray-200"></div>}
-                                         </div>
-                                     </button>
+                                     </li>
                                  )
                              })}
-                         </div>
+                         </ul>
+
+                         <button
+                           onClick={() => setIsChamadaMode(false)}
+                           className={`w-full rounded-2xl py-3.5 font-bold text-white flex items-center justify-center gap-2 transition-colors ${faltam === 0 ? 'bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200' : 'bg-church-700 hover:bg-church-800'}`}
+                         >
+                           <Check size={18} /> {faltam === 0 ? 'Concluir chamada' : `Concluir (faltam ${faltam})`}
+                         </button>
                      </div>
+                       );
+                     })()
                  ) : (
                      // VIEW MODE & OBSERVATIONS
                      <div className="space-y-8 animate-fade-in">

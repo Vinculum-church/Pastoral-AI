@@ -120,7 +120,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
                   </span>
                 )}
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 font-serif italic">Paz e Bem, {user?.name.split(' ')[0]}!</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 font-serif italic">Paz e Bem, {(() => { const p = (user?.name || '').split('/')[0].trim().split(/\s+/); return /^(pe|pr|ir|dom|frei|diác|diac)\.?$/i.test(p[0] || '') && p[1] ? `${p[0]} ${p[1]}` : p[0]; })()}!</h2>
               <p className="text-church-100 text-base md:text-lg leading-relaxed opacity-90 font-medium">
                 "O Senhor é meu pastor e nada me faltará." — Salmo 23
               </p>

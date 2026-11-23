@@ -4,6 +4,7 @@ import { Church, Lock, Mail, Loader2, Info, BookOpen, Heart, ChevronRight, Spark
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
 import { PastoralType } from '../types';
+import LogoMark from './LogoMark';
 import { PASTORAL_CONFIGS } from '../constants';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 
@@ -73,8 +74,8 @@ const Login: React.FC = () => {
       </div>
       <div className="max-w-lg w-full relative">
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-white/10 border border-gold-300/40 rounded-2xl flex items-center justify-center mb-4 text-gold-200 shadow-lg shadow-church-950/30 backdrop-blur">
-            <Church size={32} />
+          <div className="mx-auto w-20 h-20 bg-white/10 border border-gold-300/40 rounded-3xl flex items-center justify-center mb-4 text-gold-200 shadow-lg shadow-church-950/30 backdrop-blur">
+            <LogoMark size={50} />
           </div>
           <h1 className="font-serif text-4xl font-semibold text-white tracking-tight">PastoriAI</h1>
           <p className="text-church-200 text-sm mt-1 font-medium">Gestão Pastoral Inteligente</p>
@@ -105,11 +106,11 @@ const Login: React.FC = () => {
                       className={`relative p-5 rounded-xl border-2 transition-all duration-200 text-left group cursor-pointer
                         ${isSelected
                           ? `${colors.bg} ${colors.border} ring-2 ${colors.ring} shadow-md scale-[1.02]`
-                          : 'border-gray-100 hover:border-gray-200 hover:shadow-sm bg-white'
+                          : 'border-gray-100 hover:border-gray-300 hover:shadow-sm bg-white'
                         }`}
                     >
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-colors
-                        ${isSelected ? colors.iconBg : 'bg-gray-50 text-gray-400 group-hover:bg-gray-100'}`}>
+                        ${colors.iconBg}`}>
                         {PASTORAL_ICONS[type]}
                       </div>
                       <h3 className={`font-bold text-sm mb-1 ${isSelected ? colors.text : 'text-gray-800'}`}>

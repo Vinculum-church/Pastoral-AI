@@ -10,11 +10,11 @@ const MOCK_EDIÇOES = [
 const FielRevista: React.FC = () => (
   <div className="space-y-6 animate-fade-in">
     <div className="flex items-center gap-3 mb-6">
-      <div className="p-3 rounded-xl bg-purple-100">
-        <BookOpen size={28} className="text-purple-600" />
+      <div className="p-3 rounded-xl bg-church-100">
+        <BookOpen size={28} className="text-church-600" />
       </div>
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Revista da Comunidade</h2>
+        <h2 className="font-serif text-xl font-semibold text-gray-900">Revista da Comunidade</h2>
         <p className="text-sm text-gray-500">Publicações e conteúdos da sua comunidade</p>
       </div>
     </div>
@@ -26,8 +26,8 @@ const FielRevista: React.FC = () => (
           className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-start justify-between"
         >
           <div className="flex items-start gap-4">
-            <div className="p-2 rounded-lg bg-gray-50 group-hover:bg-purple-50 transition-colors">
-              <FileText size={24} className="text-purple-600" />
+            <div className="p-2 rounded-lg bg-gray-50 group-hover:bg-church-50 transition-colors">
+              <FileText size={24} className="text-church-600" />
             </div>
             <div>
               <h3 className="font-bold text-gray-900 mb-1">{ed.titulo}</h3>
@@ -35,7 +35,7 @@ const FielRevista: React.FC = () => (
               <span className="text-xs text-gray-400">{ed.data}</span>
             </div>
           </div>
-          <ChevronRight size={20} className="text-gray-300 group-hover:text-purple-500" />
+          <ChevronRight size={20} className="text-gray-300 group-hover:text-church-500" />
         </div>
       ))}
     </div>

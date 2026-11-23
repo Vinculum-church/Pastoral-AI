@@ -76,7 +76,7 @@ const FielMatricula: React.FC = () => {
         <div className="w-20 h-20 mx-auto bg-emerald-100 rounded-full flex items-center justify-center">
           <CheckCircle size={40} className="text-emerald-600" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900">Solicitação Enviada!</h2>
+        <h2 className="font-serif text-2xl font-semibold text-gray-900">Solicitação Enviada!</h2>
         <p className="text-gray-500">
           O coordenador da <strong>{session?.comunidadeNome}</strong> receberá sua solicitação de matrícula
           e entrará em contato pelo e-mail <strong>{session?.email}</strong>.
@@ -88,11 +88,11 @@ const FielMatricula: React.FC = () => {
   return (
     <div className="max-w-lg mx-auto">
       <div className="flex items-center space-x-3 mb-6">
-        <div className="p-3 rounded-xl bg-purple-100 text-purple-600">
+        <div className="p-3 rounded-xl bg-church-100 text-church-600">
           <UserPlus size={24} />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Matricular Catequizando</h2>
+          <h2 className="font-serif text-xl font-semibold text-gray-900">Matricular Catequizando</h2>
           <p className="text-sm text-gray-500">Preencha os dados. O coordenador analisará a solicitação.</p>
         </div>
       </div>
@@ -113,7 +113,7 @@ const FielMatricula: React.FC = () => {
               required
               value={nome}
               onChange={e => setNome(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50 focus:bg-white transition-all"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-church-500 outline-none bg-gray-50 focus:bg-white transition-all"
               placeholder="Nome completo do catequizando"
             />
           </div>
@@ -126,7 +126,7 @@ const FielMatricula: React.FC = () => {
                 required
                 value={dataNascimento}
                 onChange={e => setDataNascimento(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50 focus:bg-white transition-all"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-church-500 outline-none bg-gray-50 focus:bg-white transition-all"
               />
             </div>
             <div>
@@ -135,7 +135,7 @@ const FielMatricula: React.FC = () => {
                 type="tel"
                 value={telefone}
                 onChange={e => setTelefone(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50 focus:bg-white transition-all"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-church-500 outline-none bg-gray-50 focus:bg-white transition-all"
                 placeholder="(11) 99999-9999"
               />
             </div>
@@ -150,7 +150,7 @@ const FielMatricula: React.FC = () => {
                     type="checkbox"
                     checked={sacramentos[sac]}
                     onChange={() => setSacramentos(prev => ({ ...prev, [sac]: !prev[sac] }))}
-                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="w-4 h-4 rounded border-gray-300 text-church-600 focus:ring-church-500"
                   />
                   <span className="text-sm text-gray-700 capitalize">{sac}</span>
                 </label>
@@ -164,7 +164,7 @@ const FielMatricula: React.FC = () => {
               <button
                 type="button"
                 onClick={addResponsavel}
-                className="text-xs font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                className="text-xs font-bold text-church-600 hover:text-church-700 flex items-center gap-1"
               >
                 <Plus size={14} /> Adicionar
               </button>
@@ -188,21 +188,21 @@ const FielMatricula: React.FC = () => {
                       required
                       value={resp.nome}
                       onChange={e => updateResponsavel(idx, 'nome', e.target.value)}
-                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white"
+                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-church-500 outline-none bg-white"
                       placeholder="Nome"
                     />
                     <input
                       type="text"
                       value={resp.parentesco}
                       onChange={e => updateResponsavel(idx, 'parentesco', e.target.value)}
-                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white"
+                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-church-500 outline-none bg-white"
                       placeholder="Parentesco (Pai, Mãe...)"
                     />
                     <input
                       type="tel"
                       value={resp.telefone}
                       onChange={e => updateResponsavel(idx, 'telefone', e.target.value)}
-                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white"
+                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-church-500 outline-none bg-white"
                       placeholder="Telefone"
                     />
                   </div>
@@ -216,7 +216,7 @@ const FielMatricula: React.FC = () => {
             <textarea
               value={observacoes}
               onChange={e => setObservacoes(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50 focus:bg-white transition-all min-h-[80px] resize-y text-sm"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-church-500 outline-none bg-gray-50 focus:bg-white transition-all min-h-[80px] resize-y text-sm"
               placeholder="Informações adicionais, necessidades especiais, etc."
             />
           </div>
@@ -226,7 +226,7 @@ const FielMatricula: React.FC = () => {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-purple-600 text-white py-3.5 rounded-xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 flex items-center justify-center disabled:opacity-50 transform active:scale-[0.98]"
+            className="w-full bg-church-600 text-white py-3.5 rounded-xl font-bold hover:bg-church-700 transition-all shadow-lg shadow-church-200 flex items-center justify-center disabled:opacity-50 transform active:scale-[0.98]"
           >
             {submitting ? <Loader2 size={20} className="animate-spin" /> : 'Enviar Solicitação de Matrícula'}
           </button>

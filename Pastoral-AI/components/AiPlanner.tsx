@@ -107,24 +107,24 @@ const AiPlanner: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center p-3 bg-indigo-100 rounded-full text-indigo-600 mb-4">
+        <div className="inline-flex items-center justify-center p-3 bg-church-100 rounded-full text-church-600 mb-4">
           <Sparkles size={32} />
         </div>
-        <h2 className="text-3xl font-bold text-gray-900">Assistente Pastoral IA</h2>
+        <h2 className="font-serif text-3xl font-semibold text-gray-900">Assistente Pastoral IA</h2>
         <p className="text-gray-500 mt-2 max-w-lg mx-auto">
           Utilize inteligência artificial para planejar {labels.encontros.toLowerCase()} inspiradores, fiéis ao magistério e adequados ao tempo litúrgico.
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg border border-indigo-100 overflow-hidden">
-        <div className="p-6 bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
+      <div className="bg-white rounded-2xl shadow-lg border border-church-100 overflow-hidden">
+        <div className="p-6 bg-gradient-to-r from-church-50 to-white border-b border-church-100">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">{labels.etapa}</label>
               <select 
                 value={etapa}
                 onChange={(e) => setEtapa(e.target.value)}
-                className="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full border-gray-300 rounded-lg text-sm focus:ring-church-500 focus:border-church-500"
               >
                 {config.etapasDisponiveis.map(e => (
                   <option key={e} value={e}>{e}</option>
@@ -136,7 +136,7 @@ const AiPlanner: React.FC = () => {
               <select 
                 value={tempo}
                 onChange={(e) => setTempo(e.target.value)}
-                className="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full border-gray-300 rounded-lg text-sm focus:ring-church-500 focus:border-church-500"
               >
                 <option value="Tempo Comum">Tempo Comum</option>
                 <option value="Advento">Advento</option>
@@ -153,18 +153,18 @@ const AiPlanner: React.FC = () => {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Ex: Sugira um encontro sobre os Dons do Espírito Santo com uma dinâmica para jovens agitados..."
-              className="w-full p-4 pr-12 h-32 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none shadow-sm"
+              className="w-full p-4 pr-12 h-32 border border-gray-300 rounded-xl focus:ring-2 focus:ring-church-500 focus:border-transparent resize-none shadow-sm"
             />
             <button
               onClick={handleGenerate}
               disabled={isLoading || !prompt.trim()}
-              className="absolute bottom-4 right-4 bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
+              className="absolute bottom-4 right-4 bg-church-600 text-white p-2 rounded-lg hover:bg-church-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
               title="Gerar Sugestão"
             >
               {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
             </button>
           </div>
-          <div className="mt-2 flex items-center text-xs text-indigo-600">
+          <div className="mt-2 flex items-center text-xs text-church-600">
             <Info size={12} className="mr-1" />
             <span>A IA sugere temas baseados na Doutrina Católica. Revise sempre antes de aplicar.</span>
           </div>
@@ -173,7 +173,7 @@ const AiPlanner: React.FC = () => {
         {result && (
           <div className="p-8 bg-white animate-fade-in relative">
             <div className="prose prose-indigo max-w-none">
-              <div className="flex items-center space-x-2 text-indigo-800 mb-6 pb-4 border-b border-indigo-100">
+              <div className="flex items-center space-x-2 text-church-800 mb-6 pb-4 border-b border-church-100">
                 <BookOpen size={24} />
                 <h3 className="text-xl font-bold m-0">Sugestão de {labels.encontro}</h3>
               </div>
@@ -190,7 +190,7 @@ const AiPlanner: React.FC = () => {
               </button>
               <button 
                 onClick={() => setIsSaveModalOpen(true)}
-                className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center font-semibold"
+                className="px-4 py-2 text-sm bg-church-600 text-white rounded-lg hover:bg-church-700 transition-colors shadow-sm flex items-center justify-center font-semibold"
               >
                 <Save size={16} className="mr-2"/> Salvar no Cronograma
               </button>
@@ -203,7 +203,7 @@ const AiPlanner: React.FC = () => {
       {isSaveModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-md overflow-hidden animate-fade-in">
-             <div className="bg-indigo-600 p-4 flex justify-between items-center text-white">
+             <div className="bg-church-600 p-4 flex justify-between items-center text-white">
                 <h3 className="font-bold flex items-center"><Calendar size={18} className="mr-2"/> Salvar {labels.encontro}</h3>
                 <button onClick={() => setIsSaveModalOpen(false)}><X size={20} /></button>
              </div>
@@ -214,7 +214,7 @@ const AiPlanner: React.FC = () => {
                       required
                       value={saveData.turmaId}
                       onChange={e => setSaveData({...saveData, turmaId: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-church-500 outline-none"
                    >
                       {turmas.map(t => (
                         <option key={t.id} value={t.id}>{t.etapa_nome} - {t.dia_encontro}</option>
@@ -228,7 +228,7 @@ const AiPlanner: React.FC = () => {
                       required
                       value={saveData.data}
                       onChange={e => setSaveData({...saveData, data: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-church-500 outline-none"
                    />
                 </div>
                 <div>
@@ -238,14 +238,14 @@ const AiPlanner: React.FC = () => {
                       required
                       value={saveData.tema}
                       onChange={e => setSaveData({...saveData, tema: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-church-500 outline-none"
                       placeholder="Tema do Encontro"
                    />
                 </div>
                 <div className="pt-2">
                     <button 
                       type="submit"
-                      className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                      className="w-full bg-church-600 text-white py-2 rounded-lg font-semibold hover:bg-church-700 transition-colors shadow-sm"
                     >
                        Confirmar e Salvar
                     </button>

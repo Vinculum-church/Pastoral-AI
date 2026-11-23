@@ -12,11 +12,11 @@ const MOCK_ORACOES = [
 const FielTerços: React.FC = () => (
   <div className="space-y-6 animate-fade-in">
     <div className="flex items-center gap-3 mb-6">
-      <div className="p-3 rounded-xl bg-purple-100">
-        <Cross size={28} className="text-purple-600" />
+      <div className="p-3 rounded-xl bg-church-100">
+        <Cross size={28} className="text-church-600" />
       </div>
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Terços e Orações</h2>
+        <h2 className="font-serif text-xl font-semibold text-gray-900">Terços e Orações</h2>
         <p className="text-sm text-gray-500">Orações, terços e devoções</p>
       </div>
     </div>
@@ -28,21 +28,21 @@ const FielTerços: React.FC = () => (
           className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-start justify-between"
         >
           <div className="flex items-start gap-4">
-            <div className="p-2 rounded-lg bg-gray-50 group-hover:bg-purple-50 transition-colors">
-              <Heart size={24} className="text-purple-600" />
+            <div className="p-2 rounded-lg bg-gray-50 group-hover:bg-church-50 transition-colors">
+              <Heart size={24} className="text-church-600" />
             </div>
             <div>
               <h3 className="font-bold text-gray-900 mb-1">{o.titulo}</h3>
               <p className="text-sm text-gray-500">{o.descricao}</p>
             </div>
           </div>
-          <BookMarked size={20} className="text-gray-300 group-hover:text-purple-500" />
+          <BookMarked size={20} className="text-gray-300 group-hover:text-church-500" />
         </div>
       ))}
     </div>
 
-    <div className="bg-purple-50 rounded-2xl p-5 border border-purple-100">
-      <p className="text-sm text-purple-800">
+    <div className="bg-church-50 rounded-2xl p-5 border border-church-100">
+      <p className="text-sm text-church-800">
         <strong>Terço em comunidade:</strong> Todas as quartas-feiras às 19h após a missa.
       </p>
     </div>

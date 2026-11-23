@@ -69,7 +69,7 @@ const SubscriptionManager: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
       <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Escolha o Plano Ideal para sua Paróquia</h2>
+        <h2 className="font-serif text-3xl font-semibold text-gray-900 mb-4">Escolha o Plano Ideal para sua Paróquia</h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Digitalize sua pastoral hoje mesmo. Aceitamos Cartão de Crédito (recorrente), PIX e Boleto.
         </p>

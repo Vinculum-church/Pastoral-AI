@@ -10,11 +10,11 @@ const MOCK_CAMPANHAS = [
 const FielCampanhas: React.FC = () => (
   <div className="space-y-6 animate-fade-in">
     <div className="flex items-center gap-3 mb-6">
-      <div className="p-3 rounded-xl bg-purple-100">
-        <Megaphone size={28} className="text-purple-600" />
+      <div className="p-3 rounded-xl bg-church-100">
+        <Megaphone size={28} className="text-church-600" />
       </div>
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Campanhas</h2>
+        <h2 className="font-serif text-xl font-semibold text-gray-900">Campanhas</h2>
         <p className="text-sm text-gray-500">Ações pastorais em andamento</p>
       </div>
     </div>
@@ -24,18 +24,18 @@ const FielCampanhas: React.FC = () => (
         <div
           key={c.id}
           className={`rounded-2xl p-5 border shadow-sm ${
-            c.ativa ? 'bg-white border-purple-100' : 'bg-gray-50 border-gray-100 opacity-75'
+            c.ativa ? 'bg-white border-church-100' : 'bg-gray-50 border-gray-100 opacity-75'
           }`}
         >
           <div className="flex items-start gap-4">
-            <div className={`p-2 rounded-lg ${c.ativa ? 'bg-purple-100' : 'bg-gray-200'}`}>
-              <TrendingUp size={24} className={c.ativa ? 'text-purple-600' : 'text-gray-500'} />
+            <div className={`p-2 rounded-lg ${c.ativa ? 'bg-church-100' : 'bg-gray-200'}`}>
+              <TrendingUp size={24} className={c.ativa ? 'text-church-600' : 'text-gray-500'} />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-bold text-gray-900">{c.titulo}</h3>
                 {c.ativa && (
-                  <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-church-600 bg-church-100 px-2 py-0.5 rounded-full">
                     Ativa
                   </span>
                 )}

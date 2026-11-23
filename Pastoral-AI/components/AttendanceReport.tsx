@@ -153,7 +153,7 @@ const AttendanceReport: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Histórico de Frequência</h2>
+          <h2 className="font-serif text-2xl font-semibold text-gray-900">Histórico de Frequência</h2>
           <p className="text-gray-500 text-sm">Visão geral de presença por {labels.turma.toLowerCase()} e por {labels.encontro.toLowerCase()}.</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">

@@ -16,9 +16,9 @@ const PASTORAL_ICONS: Record<PastoralType, React.ReactNode> = {
 };
 
 const PASTORAL_COLORS: Record<PastoralType, { bg: string; border: string; text: string; ring: string; iconBg: string }> = {
-  [PastoralType.CATEQUESE]: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', ring: 'ring-blue-500', iconBg: 'bg-blue-100 text-blue-600' },
-  [PastoralType.FIEL]: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', ring: 'ring-purple-500', iconBg: 'bg-purple-100 text-purple-600' },
-  [PastoralType.PASTORAL_CRISTA]: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', ring: 'ring-amber-500', iconBg: 'bg-amber-100 text-amber-600' },
+  [PastoralType.CATEQUESE]: { bg: 'bg-church-50', border: 'border-church-200', text: 'text-church-700', ring: 'ring-church-500', iconBg: 'bg-church-100 text-church-600' },
+  [PastoralType.FIEL]: { bg: 'bg-gold-50', border: 'border-gold-200', text: 'text-gold-800', ring: 'ring-gold-500', iconBg: 'bg-gold-100 text-gold-700' },
+  [PastoralType.PASTORAL_CRISTA]: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', ring: 'ring-emerald-600', iconBg: 'bg-emerald-100 text-emerald-700' },
 };
 
 const Login: React.FC = () => {
@@ -60,15 +60,25 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-church-50 via-white to-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-lg w-full">
+    <div className="min-h-screen bg-marfim relative overflow-hidden flex items-center justify-center p-4">
+      {/* Faixa azul com vitral discreto no topo */}
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-church-900 via-church-800 to-church-700 rounded-b-[48px]">
+        <svg className="absolute left-1/2 -translate-x-1/2 -top-24 w-[420px] h-[420px] text-gold-300/10" viewBox="0 0 200 200" fill="none">
+          {Array.from({ length: 16 }).map((_, i) => (
+            <line key={i} x1="100" y1="100" x2={100 + 100 * Math.cos((i * Math.PI) / 8)} y2={100 + 100 * Math.sin((i * Math.PI) / 8)} stroke="currentColor" strokeWidth="0.8" />
+          ))}
+          <circle cx="100" cy="100" r="40" stroke="currentColor" strokeWidth="0.8" />
+          <circle cx="100" cy="100" r="70" stroke="currentColor" strokeWidth="0.8" />
+        </svg>
+      </div>
+      <div className="max-w-lg w-full relative">
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-church-600 to-church-800 rounded-2xl flex items-center justify-center mb-4 text-white shadow-lg shadow-church-200">
+          <div className="mx-auto w-16 h-16 bg-white/10 border border-gold-300/40 rounded-2xl flex items-center justify-center mb-4 text-gold-200 shadow-lg shadow-church-950/30 backdrop-blur">
             <Church size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">PastoriAI</h1>
-          <p className="text-gray-500 text-sm mt-1 font-medium">Gestão Pastoral Inteligente</p>
-          <a href="/fiel" className="inline-block mt-3 text-sm text-purple-600 hover:text-purple-700 font-medium hover:underline">
+          <h1 className="font-serif text-4xl font-semibold text-white tracking-tight">PastoriAI</h1>
+          <p className="text-church-200 text-sm mt-1 font-medium">Gestão Pastoral Inteligente</p>
+          <a href="/fiel" className="inline-block mt-3 text-sm text-gold-200 hover:text-gold-100 font-medium hover:underline">
             Portal do Fiel (acesso sem cadastro)
           </a>
         </div>
@@ -77,8 +87,8 @@ const Login: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             <div className="p-8">
               <div className="flex items-center space-x-2 mb-6">
-                <Sparkles size={18} className="text-church-600" />
-                <h2 className="text-lg font-bold text-gray-900">Selecione sua Pastoral</h2>
+                <Sparkles size={18} className="text-gold-600" />
+                <h2 className="font-serif text-xl font-semibold text-gray-900">Selecione sua Pastoral</h2>
               </div>
               <p className="text-sm text-gray-500 mb-6">O sistema se adaptará automaticamente à terminologia e funcionalidades da pastoral escolhida.</p>
 

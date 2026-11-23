@@ -23,8 +23,8 @@ const EscolaFormacaoView: React.FC = () => {
 
   const getIcon = (tipo: Modulo['tipo']) => {
     switch (tipo) {
-      case 'video': return <Video size={22} className="text-purple-500" />;
-      case 'leitura': return <BookOpen size={22} className="text-blue-500" />;
+      case 'video': return <Video size={22} className="text-church-500" />;
+      case 'leitura': return <BookOpen size={22} className="text-church-500" />;
       default: return <FileText size={22} className="text-emerald-500" />;
     }
   };
@@ -33,7 +33,7 @@ const EscolaFormacaoView: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="font-serif text-2xl font-semibold text-gray-900 flex items-center gap-2">
             <GraduationCap size={28} className="text-church-600" />
             Escola Pastoral de Formação
           </h2>

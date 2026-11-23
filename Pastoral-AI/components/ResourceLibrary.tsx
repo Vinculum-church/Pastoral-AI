@@ -33,8 +33,8 @@ const ResourceLibrary: React.FC = () => {
   const getIcon = (tipo: string) => {
     switch (tipo) {
       case 'PDF': return <FileText size={24} className="text-red-500" />;
-      case 'LINK': return <LinkIcon size={24} className="text-blue-500" />;
-      case 'VIDEO': return <Video size={24} className="text-purple-500" />;
+      case 'LINK': return <LinkIcon size={24} className="text-church-500" />;
+      case 'VIDEO': return <Video size={24} className="text-church-500" />;
       default: return <File size={24} className="text-gray-500" />;
     }
   };
@@ -59,7 +59,7 @@ const ResourceLibrary: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h2 className="text-2xl font-bold text-gray-900">Materiais de Apoio</h2>
+           <h2 className="font-serif text-2xl font-semibold text-gray-900">Materiais de Apoio</h2>
            <p className="text-gray-500 text-sm">Biblioteca de formação, liturgia e dinâmicas.</p>
         </div>
         <button 
@@ -134,7 +134,7 @@ const ResourceLibrary: React.FC = () => {
                         target="_blank" 
                         rel="noreferrer"
                         className={`flex items-center space-x-1 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors
-                            ${material.tipo === 'LINK' ? 'text-blue-600 hover:bg-blue-50' : 'text-church-600 hover:bg-church-50'}
+                            ${material.tipo === 'LINK' ? 'text-church-600 hover:bg-church-50' : 'text-church-600 hover:bg-church-50'}
                         `}
                       >
                           {material.tipo === 'LINK' ? (

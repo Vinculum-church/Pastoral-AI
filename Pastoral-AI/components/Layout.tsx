@@ -60,10 +60,10 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
       {/* Mobile Header */}
       <div className="md:hidden bg-white/80 backdrop-blur-md sticky top-0 border-b border-gray-200 p-4 flex justify-between items-center z-30 shadow-sm">
         <div className="flex items-center space-x-2 text-church-900">
-          <div className="bg-church-600 p-1.5 rounded-lg text-white">
+          <div className="bg-church-800 p-1.5 rounded-lg text-gold-200">
             <Church size={20} />
           </div>
-          <span className="font-bold text-lg tracking-tight">PastoriAI</span>
+          <span className="font-serif font-semibold text-xl tracking-tight">PastoriAI</span>
         </div>
         {/* No celular o menu completo abre pelo "Mais" da barra inferior; aqui só o botão de fechar */}
         {isMobileMenuOpen && (
@@ -93,12 +93,12 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
         {/* Sidebar Header */}
         <div className="p-8 pb-4">
           <div className="flex items-center space-x-3 text-church-900 mb-8">
-            <div className="bg-gradient-to-br from-church-600 to-church-800 p-2.5 rounded-xl text-white shadow-lg shadow-church-200">
+            <div className="bg-gradient-to-br from-church-700 to-church-900 p-2.5 rounded-xl text-gold-200 shadow-lg shadow-church-200">
               <Church size={28} />
             </div>
             <div>
-              <h1 className="font-bold text-xl leading-none tracking-tight text-gray-900">PastoriAI</h1>
-              <p className="text-[11px] text-church-600 font-semibold uppercase tracking-wider mt-1.5">{labels.pastoralDescricao}</p>
+              <h1 className="font-serif font-semibold text-2xl leading-none tracking-tight text-gray-900">PastoriAI</h1>
+              <p className="text-[11px] text-gold-700 font-semibold uppercase tracking-wider mt-1.5">{labels.pastoralDescricao}</p>
             </div>
           </div>
 

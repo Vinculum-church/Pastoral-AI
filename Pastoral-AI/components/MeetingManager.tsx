@@ -229,8 +229,8 @@ const MeetingManager: React.FC = () => {
 
   return (
     <div className="space-y-6 relative animate-fade-in">
-      <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center">
+      <div className="flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+        <h2 className="font-serif text-xl font-semibold text-gray-900 flex items-center">
             <Calendar className="mr-2 text-church-600"/>
             {labels.encontros} & Frequência
         </h2>
@@ -242,7 +242,7 @@ const MeetingManager: React.FC = () => {
                 setSelectedEncontro(null);
                 setIsChamadaMode(false);
             }}
-            className="appearance-none bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-church-500 focus:border-church-500 block w-64 p-2.5 pr-8 font-medium"
+            className="appearance-none bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-church-500 focus:border-church-500 block w-full sm:w-64 p-2.5 pr-8 font-medium"
             >
             {visibleTurmas.map(turma => (
                 <option key={turma.id} value={turma.id}>{turma.etapa_nome} - {turma.dia_encontro}</option>
@@ -537,7 +537,7 @@ const MeetingManager: React.FC = () => {
                           type="button"
                           onClick={handleConsultAi}
                           disabled={!newEncontro.data || isLoadingAi}
-                          className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-indigo-100 transition-colors flex items-center disabled:opacity-50 border border-indigo-100"
+                          className="bg-church-50 text-church-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-church-100 transition-colors flex items-center disabled:opacity-50 border border-church-100"
                        >
                            {isLoadingAi ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} className="mr-2"/>}
                            Consultar Liturgia
@@ -547,7 +547,7 @@ const MeetingManager: React.FC = () => {
 
                 {/* AI Suggestion Card - Rich Design */}
                 {aiSuggestion && (
-                    <div className="relative overflow-hidden rounded-xl border border-indigo-100 shadow-sm animate-fade-in">
+                    <div className="relative overflow-hidden rounded-xl border border-church-100 shadow-sm animate-fade-in">
                         {/* Liturgical Header */}
                         <div className={`p-4 text-white flex justify-between items-start
                             ${aiSuggestion.cor.toLowerCase().includes('vermelho') ? 'bg-gradient-to-r from-red-600 to-red-500' :
@@ -602,14 +602,14 @@ const MeetingManager: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={handleApplySuggestion}
-                                className="w-full flex items-center justify-center space-x-2 bg-indigo-600 text-white hover:bg-indigo-700 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-100 transform active:scale-95"
+                                className="w-full flex items-center justify-center space-x-2 bg-church-600 text-white hover:bg-church-700 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-church-100 transform active:scale-95"
                             >
                                 <CheckCircle size={18} />
                                 <span>Aplicar Sugestão ao Formulário</span>
                             </button>
 
                             <div className="border-t border-gray-100 pt-4 mt-2">
-                                <label className="block text-xs font-bold text-indigo-800 mb-2 uppercase tracking-widest">
+                                <label className="block text-xs font-bold text-church-800 mb-2 uppercase tracking-widest">
                                     Contexto Específico (Opcional)
                                 </label>
                                 <div className="flex gap-2">
@@ -617,13 +617,13 @@ const MeetingManager: React.FC = () => {
                                         value={customPrompt}
                                         onChange={(e) => setCustomPrompt(e.target.value)}
                                         placeholder="Ex: Focar na obediência, incluir dinâmica de grupo..."
-                                        className="flex-1 text-sm border border-indigo-100 bg-indigo-50/30 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                        className="flex-1 text-sm border border-church-100 bg-church-50/30 rounded-xl p-3 focus:ring-2 focus:ring-church-500 outline-none transition-all"
                                     />
                                     <button 
                                         type="button"
                                         onClick={handleGenerateScript}
                                         disabled={isGeneratingScript}
-                                        className="bg-indigo-600 text-white px-5 py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center disabled:opacity-50"
+                                        className="bg-church-600 text-white px-5 py-3 rounded-xl hover:bg-church-700 transition-all shadow-lg shadow-church-200 flex items-center justify-center disabled:opacity-50"
                                         title="Gerar Roteiro Completo"
                                     >
                                         {isGeneratingScript ? <Loader2 size={18} className="animate-spin" /> : <Wand2 size={18} />}

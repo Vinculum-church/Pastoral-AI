@@ -10,11 +10,11 @@ const MOCK_AVISOS = [
 const FielAvisos: React.FC = () => (
   <div className="space-y-6 animate-fade-in">
     <div className="flex items-center gap-3 mb-6">
-      <div className="p-3 rounded-xl bg-purple-100">
-        <Bell size={28} className="text-purple-600" />
+      <div className="p-3 rounded-xl bg-church-100">
+        <Bell size={28} className="text-church-600" />
       </div>
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Avisos</h2>
+        <h2 className="font-serif text-xl font-semibold text-gray-900">Avisos</h2>
         <p className="text-sm text-gray-500">Comunicados e novidades da paróquia</p>
       </div>
     </div>
@@ -32,7 +32,7 @@ const FielAvisos: React.FC = () => (
               {av.prioridade === 'alta' ? (
                 <AlertCircle size={24} className="text-amber-600" />
               ) : (
-                <Info size={24} className="text-purple-600" />
+                <Info size={24} className="text-church-600" />
               )}
             </div>
             <div className="flex-1">

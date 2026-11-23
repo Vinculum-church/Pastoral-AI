@@ -56,7 +56,7 @@ const EstruturaView: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+          <h2 className="font-serif text-2xl font-semibold text-gray-900 flex items-center">
             <Church className="mr-2 text-church-600" size={28} />
             Estrutura Paroquial
           </h2>

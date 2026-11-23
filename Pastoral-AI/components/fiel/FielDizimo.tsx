@@ -4,17 +4,17 @@ import { DollarSign, CreditCard, QrCode } from 'lucide-react';
 const FielDizimo: React.FC = () => (
   <div className="space-y-6 animate-fade-in">
     <div className="flex items-center gap-3 mb-6">
-      <div className="p-3 rounded-xl bg-purple-100">
-        <DollarSign size={28} className="text-purple-600" />
+      <div className="p-3 rounded-xl bg-church-100">
+        <DollarSign size={28} className="text-church-600" />
       </div>
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Dízimo</h2>
+        <h2 className="font-serif text-xl font-semibold text-gray-900">Dízimo</h2>
         <p className="text-sm text-gray-500">Contribua com a comunidade</p>
       </div>
     </div>
 
-    <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 text-white shadow-lg">
-      <p className="text-purple-100 text-sm mb-4">
+    <div className="bg-gradient-to-r from-church-600 to-church-700 rounded-2xl p-6 text-white shadow-lg">
+      <p className="text-church-100 text-sm mb-4">
         O dízimo é um gesto de gratidão e partilha. Sua contribuição sustenta as obras pastorais e sociais da comunidade.
       </p>
       <div className="flex flex-wrap gap-3">

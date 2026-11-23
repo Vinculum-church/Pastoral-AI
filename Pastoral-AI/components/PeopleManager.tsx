@@ -384,7 +384,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h2 className="text-2xl font-bold text-gray-900">Gestão de Pessoas</h2>
+           <h2 className="font-serif text-2xl font-semibold text-gray-900">Gestão de Pessoas</h2>
            <p className="text-gray-500 text-sm">{labels.participantes}, {labels.equipe} e Marketing.</p>
         </div>
         <div className="flex space-x-2">
@@ -561,7 +561,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                      const turma = turmas.find(t => t.id === cat.turma_id);
                      return (
                          <div key={cat.id} className="border border-gray-200 rounded-lg p-4 flex items-start space-x-4 hover:shadow-md transition-shadow bg-white">
-                             <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-lg border border-purple-200">
+                             <div className="h-12 w-12 rounded-full bg-church-100 flex items-center justify-center text-church-600 font-bold text-lg border border-church-200">
                                  {cat.nome.charAt(0)}
                              </div>
                              <div className="flex-1">
@@ -619,8 +619,8 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                                     <td className="px-6 py-3 text-sm font-bold text-gray-900">{contact.nome}</td>
                                     <td className="px-6 py-3 text-xs">
                                         <span className={`px-2 py-1 rounded-full font-bold
-                                            ${contact.tipo === labels.lider ? 'bg-purple-100 text-purple-700' : 
-                                              contact.tipo === 'Responsável' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                                            ${contact.tipo === labels.lider ? 'bg-church-100 text-church-700' : 
+                                              contact.tipo === 'Responsável' ? 'bg-church-100 text-church-700' : 'bg-yellow-100 text-yellow-700'
                                             }`}>
                                             {contact.tipo}
                                         </span>
@@ -695,7 +695,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                             <h4 className="text-xs font-bold text-church-600 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2 flex items-center">
                                 <Droplets size={14} className="mr-2"/> Vida Cristã (Sacramentos Já Recebidos)
                             </h4>
-                            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                            <div className="bg-church-50/50 p-4 rounded-xl border border-church-100">
                                 <p className="text-xs text-gray-500 mb-3 font-medium">Marque os sacramentos que o {labels.participante.toLowerCase()} JÁ recebeu:</p>
                                 <div className="flex flex-wrap gap-4 md:gap-8">
                                     <label className="flex items-center space-x-3 cursor-pointer group">

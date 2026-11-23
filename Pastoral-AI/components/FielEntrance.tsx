@@ -88,13 +88,13 @@ const FielEntrance: React.FC = () => {
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-church-50 via-white to-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl flex items-center justify-center mb-4 text-white shadow-lg shadow-purple-200">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-church-600 to-church-800 rounded-2xl flex items-center justify-center mb-4 text-white shadow-lg shadow-church-200">
             <Heart size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Portal do Fiel</h1>
+          <h1 className="font-serif text-3xl font-semibold text-gray-900 tracking-tight">Portal do Fiel</h1>
           <p className="text-gray-500 text-sm mt-1 font-medium">Acesso sem cadastro</p>
         </div>
 
@@ -114,7 +114,7 @@ const FielEntrance: React.FC = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-church-500 focus:border-transparent outline-none transition-all"
                     placeholder="seu.email@exemplo.com"
                   />
                 </div>
@@ -127,7 +127,7 @@ const FielEntrance: React.FC = () => {
                   <select
                     value={paroquiaId}
                     onChange={(e) => setParoquiaId(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all appearance-none bg-white"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-church-500 focus:border-transparent outline-none transition-all appearance-none bg-white"
                   >
                     {paroquias.map(p => (
                       <option key={p.id} value={p.id}>{p.nome}</option>
@@ -144,7 +144,7 @@ const FielEntrance: React.FC = () => {
                   <select
                     value={comunidadeId}
                     onChange={(e) => setComunidadeId(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all appearance-none bg-white"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-church-500 focus:border-transparent outline-none transition-all appearance-none bg-white"
                   >
                     {comunidades.map(c => (
                       <option key={c.id} value={c.id}>{c.nome}</option>
@@ -157,14 +157,14 @@ const FielEntrance: React.FC = () => {
               <button
                 type="submit"
                 disabled={!isValidEmail || !paroquiaId || !comunidadeId || loading || loadingData}
-                className="w-full bg-purple-600 text-white py-3.5 rounded-xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
+                className="w-full bg-church-600 text-white py-3.5 rounded-xl font-bold hover:bg-church-700 transition-all shadow-lg shadow-church-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
               >
                 {loading || loadingData ? <Loader2 size={20} className="animate-spin" /> : 'Entrar'}
               </button>
             </form>
 
             <p className="text-xs text-center text-gray-400 mt-6">
-              <a href="/" className="text-purple-600 hover:underline">Voltar ao login</a>
+              <a href="/" className="text-church-600 hover:underline">Voltar ao login</a>
             </p>
           </div>
         </div>

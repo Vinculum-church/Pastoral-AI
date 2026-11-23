@@ -40,7 +40,7 @@ const SolicitacoesView: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center">
+        <h2 className="font-serif text-xl font-semibold text-gray-900 flex items-center">
           <Inbox className="mr-2 text-church-600" />
           Solicitações de Matrícula
         </h2>
@@ -103,9 +103,9 @@ const SolicitacoesView: React.FC = () => {
                         <div className="bg-gray-50 p-3 rounded-xl">
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Sacramentos</p>
                           <div className="flex flex-wrap gap-2 mt-1">
-                            {sol.sacramentos.batismo && <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">Batismo</span>}
+                            {sol.sacramentos.batismo && <span className="text-xs bg-church-50 text-church-700 px-2 py-0.5 rounded-full font-medium">Batismo</span>}
                             {sol.sacramentos.eucaristia && <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Eucaristia</span>}
-                            {sol.sacramentos.crisma && <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full font-medium">Crisma</span>}
+                            {sol.sacramentos.crisma && <span className="text-xs bg-church-50 text-church-700 px-2 py-0.5 rounded-full font-medium">Crisma</span>}
                             {!sol.sacramentos.batismo && !sol.sacramentos.eucaristia && !sol.sacramentos.crisma && (
                               <span className="text-xs text-gray-400 italic">Nenhum</span>
                             )}

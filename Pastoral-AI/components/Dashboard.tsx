@@ -157,12 +157,12 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <QuickAction icon={UserPlus} label={labels.novoParticipante} onClick={() => setView(ViewState.PARTICIPANTES)} colorClass="bg-blue-50 text-blue-600" />
-        <QuickAction icon={Calendar} label={`Novo ${labels.encontro}`} onClick={() => setView(ViewState.ENCONTROS)} colorClass="bg-purple-50 text-purple-600" />
+        <QuickAction icon={UserPlus} label={labels.novoParticipante} onClick={() => setView(ViewState.PARTICIPANTES)} colorClass="bg-church-50 text-church-600" />
+        <QuickAction icon={Calendar} label={`Novo ${labels.encontro}`} onClick={() => setView(ViewState.ENCONTROS)} colorClass="bg-church-50 text-church-600" />
         <QuickAction icon={MessageSquare} label="Novo Aviso" onClick={() => setIsAvisoModalOpen(true)} colorClass="bg-amber-50 text-amber-600" />
         <QuickAction icon={BookOpen} label="Materiais" onClick={() => setView(ViewState.MATERIAIS)} colorClass="bg-emerald-50 text-emerald-600" />
         <QuickAction icon={BarChart3} label="Relatórios" onClick={() => setView(ViewState.RELATORIOS)} colorClass="bg-pink-50 text-pink-600" />
-        <QuickAction icon={Bell} label="Notificações" onClick={() => setView(ViewState.MARKETING)} colorClass="bg-indigo-50 text-indigo-600" />
+        <QuickAction icon={Bell} label="Notificações" onClick={() => setView(ViewState.MARKETING)} colorClass="bg-church-50 text-church-600" />
       </div>
 
       {/* Solicitações pendentes */}
@@ -193,8 +193,8 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
           value={nextMeeting ? new Date(nextMeeting.data).getDate().toString().padStart(2, '0') + '/' + (new Date(nextMeeting.data).getMonth()+1).toString().padStart(2, '0') : "--/--"} 
           subtext="Agenda Pastoral"
           icon={Calendar} 
-          colorClass="text-blue-600"
-          bgClass="bg-blue-50" 
+          colorClass="text-church-600"
+          bgClass="bg-church-50" 
           trend={12}
         />
         <StatCard 
@@ -211,8 +211,8 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
           value={statCard2Value} 
           subtext="Equipe Ativa"
           icon={BookOpen} 
-          colorClass="text-purple-600"
-          bgClass="bg-purple-50"
+          colorClass="text-church-600"
+          bgClass="bg-church-50"
         />
         <StatCard 
           title="Atenção Pastoral" 
@@ -308,9 +308,9 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
                   textStyles = 'text-amber-900';
                   subTextStyles = 'text-amber-800';
                 } else if (aviso.prioridade === AvisoPriority.NORMAL) {
-                  priorityStyles = 'bg-blue-50 border-church-500';
-                  textStyles = 'text-blue-900';
-                  subTextStyles = 'text-blue-800';
+                  priorityStyles = 'bg-church-50 border-church-500';
+                  textStyles = 'text-church-900';
+                  subTextStyles = 'text-church-800';
                 }
 
                 return (

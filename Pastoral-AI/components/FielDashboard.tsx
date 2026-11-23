@@ -41,15 +41,15 @@ const FielCard = ({
   >
     <div className="flex items-start justify-between">
       <div className="flex items-start space-x-4">
-        <div className="p-3 rounded-xl bg-gray-50 group-hover:bg-purple-50 transition-colors">
-          <Icon size={24} className="text-purple-600" />
+        <div className="p-3 rounded-xl bg-gray-50 group-hover:bg-church-50 transition-colors">
+          <Icon size={24} className="text-church-600" />
         </div>
         <div>
           <h3 className="font-bold text-gray-900 mb-1">{title}</h3>
           <p className="text-sm text-gray-500">{description}</p>
         </div>
       </div>
-      <ChevronRight size={20} className="text-gray-300 group-hover:text-purple-500 group-hover:translate-x-1 transition-all" />
+      <ChevronRight size={20} className="text-gray-300 group-hover:text-church-500 group-hover:translate-x-1 transition-all" />
     </div>
   </div>
 );
@@ -84,15 +84,15 @@ const FielDashboard: React.FC = () => {
       default:
         return (
           <>
-            <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 text-white shadow-lg shadow-purple-200">
+            <div className="bg-gradient-to-r from-church-600 to-church-700 rounded-2xl p-6 text-white shadow-lg shadow-church-200">
               <div className="flex items-center space-x-2 mb-2">
                 <Heart size={20} />
-                <span className="text-sm font-medium text-purple-100">Bem-vindo(a)</span>
+                <span className="text-sm font-medium text-church-100">Bem-vindo(a)</span>
               </div>
-              <h2 className="text-xl font-bold">
+              <h2 className="font-serif text-xl font-semibold">
                 Conteúdos pastorais da {session.comunidadeNome}
               </h2>
-              <p className="text-purple-100 text-sm mt-1">
+              <p className="text-church-100 text-sm mt-1">
                 Acesse revistas, avisos, campanhas e muito mais.
               </p>
             </div>
@@ -147,7 +147,7 @@ const FielDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-church-50 via-white to-gray-50">
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-20">
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
@@ -160,7 +160,7 @@ const FielDashboard: React.FC = () => {
               </button>
             )}
             <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-br from-purple-600 to-purple-800 p-2 rounded-xl text-white">
+              <div className="bg-gradient-to-br from-church-600 to-church-800 p-2 rounded-xl text-white">
                 <Church size={24} />
               </div>
               <div>

@@ -24,7 +24,7 @@ export const PASTORAL_CONFIGS: Record<PastoralType, PastoralConfig> = {
       novoParticipante: 'Novo Catequizando',
       novoLider: 'Novo Catequista',
     },
-    etapasDisponiveis: ['Pré-Eucaristia', 'Eucaristia I', 'Eucaristia II', 'Perseverança', 'Crisma', 'Catecumenato Adultos'],
+    etapasDisponiveis: ['Sementinha', '1ª Etapa', '2ª Etapa', '1ª Eucaristia', 'Perseverança', 'Outro (personalizado)'],
   },
   [PastoralType.FIEL]: {
     type: PastoralType.FIEL,

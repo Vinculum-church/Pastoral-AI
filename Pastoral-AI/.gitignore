@@ -29,3 +29,7 @@ npm-debug.log*
 # Cloudflare
 .wrangler/
 .dev.vars
+
+# configurações locais (nunca commitar)
+.env.*
+!.env.example

@@ -9,17 +9,20 @@ import {
   Download, 
   ExternalLink,
   Plus,
-  X 
+  X,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { MaterialApoio } from '../types';
 
 const ResourceLibrary: React.FC = () => {
-  const { materiais, addMaterial } = useData();
+  const { materiais, addMaterial, updateMaterial, removeMaterial } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('TODOS');
   const [filterCategory, setFilterCategory] = useState<string>('TODOS');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // New Material Form State
   const [newMaterial, setNewMaterial] = useState<Omit<MaterialApoio, 'id' | 'data_adicao'>>({
@@ -50,9 +53,25 @@ const ResourceLibrary: React.FC = () => {
 
   const handleSave = (e: React.FormEvent) => {
       e.preventDefault();
-      addMaterial(newMaterial);
+      if (editingId) {
+        const existing = materiais.find(m => m.id === editingId);
+        if (existing) updateMaterial({ ...existing, ...newMaterial });
+      } else {
+        addMaterial(newMaterial);
+      }
       setIsModalOpen(false);
+      setEditingId(null);
       setNewMaterial({ titulo: '', descricao: '', tipo: 'PDF', categoria: 'Formação', url: '' });
+  };
+
+  const startEdit = (m: MaterialApoio) => {
+    setEditingId(m.id);
+    setNewMaterial({ titulo: m.titulo, descricao: m.descricao, tipo: m.tipo, categoria: m.categoria, url: m.url });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    removeMaterial(id);
   };
 
   return (
@@ -63,7 +82,7 @@ const ResourceLibrary: React.FC = () => {
            <p className="text-gray-500 text-sm">Biblioteca de formação, liturgia e dinâmicas.</p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => { setEditingId(null); setNewMaterial({ titulo: '', descricao: '', tipo: 'PDF', categoria: 'Formação', url: '' }); setIsModalOpen(true); }}
           className="bg-church-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center hover:bg-church-700 transition-colors"
         >
           <Plus size={20} className="mr-2" />
@@ -119,9 +138,13 @@ const ResourceLibrary: React.FC = () => {
                       <div className="p-3 bg-gray-50 rounded-lg">
                           {getIcon(material.tipo)}
                       </div>
-                      <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                          {material.categoria}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            {material.categoria}
+                        </span>
+                        <button onClick={() => startEdit(material)} className="p-1.5 rounded-lg text-gray-400 hover:text-church-600 hover:bg-church-50 transition-colors cursor-pointer" title="Editar"><Pencil size={14} /></button>
+                        <button onClick={() => handleDelete(material.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer" title="Excluir"><Trash2 size={14} /></button>
+                      </div>
                   </div>
                   
                   <h3 className="font-bold text-gray-900 mb-1 line-clamp-2">{material.titulo}</h3>
@@ -160,8 +183,8 @@ const ResourceLibrary: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
              <div className="bg-church-600 p-4 flex justify-between items-center text-white">
-                <h3 className="font-bold">Adicionar Material</h3>
-                <button onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+                <h3 className="font-bold">{editingId ? 'Editar Material' : 'Adicionar Material'}</h3>
+                <button onClick={() => { setIsModalOpen(false); setEditingId(null); }}><X size={20} /></button>
              </div>
              <form onSubmit={handleSave} className="p-6 space-y-4">
                 <div>

@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Church, Plus, X, Users, Calendar, Clock, Trash2 } from 'lucide-react';
+import { Church, Plus, X, Users, Calendar, Clock, Trash2, Pencil, Printer } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
 import { UserRole } from '../types';
 
 const EstruturaView: React.FC = () => {
-  const { turmas, catequizandos, encontros, addTurma, removeTurma } = useData();
+  const { turmas, catequizandos, catequistas, encontros, paroquia, addTurma, updateTurma, removeTurma } = useData();
   const { user } = useAuth();
   const { labels, config } = usePastoral();
   const isCoordenador = user?.role === UserRole.COORDENADOR || user?.role === UserRole.ADMIN;
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isCustomEtapa, setIsCustomEtapa] = useState(false);
+  const CUSTOM_OPTION = 'Outro (personalizado)';
   const currentYear = new Date().getFullYear();
   const [form, setForm] = useState({
     comunidade_id: user?.comunidade_id || '',
@@ -33,23 +36,81 @@ const EstruturaView: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.etapa_nome || !form.dia_encontro || !form.horario) return;
-    addTurma({
-      comunidade_id: form.comunidade_id || user?.comunidade_id || '',
-      etapa_id: form.etapa_id || '',
-      etapa_nome: form.etapa_nome,
-      ano: form.ano,
-      faixa_etaria: form.faixa_etaria,
-      dia_encontro: form.dia_encontro,
-      horario: form.horario,
-    });
+    if (editingId) {
+      const existing = turmas.find(t => t.id === editingId);
+      if (existing) {
+        updateTurma({ ...existing, etapa_nome: form.etapa_nome, ano: form.ano, faixa_etaria: form.faixa_etaria, dia_encontro: form.dia_encontro, horario: form.horario });
+      }
+    } else {
+      addTurma({
+        comunidade_id: form.comunidade_id || user?.comunidade_id || '',
+        etapa_id: form.etapa_id || '',
+        etapa_nome: form.etapa_nome,
+        ano: form.ano,
+        faixa_etaria: form.faixa_etaria,
+        dia_encontro: form.dia_encontro,
+        horario: form.horario,
+      });
+    }
     setIsModalOpen(false);
-    setForm({
-      ...form,
-      etapa_nome: config.etapasDisponiveis[0] || '',
-      faixa_etaria: '',
-      dia_encontro: '',
-      horario: '',
-    });
+    setEditingId(null);
+    setIsCustomEtapa(false);
+    setForm({ ...form, etapa_nome: config.etapasDisponiveis[0] || '', faixa_etaria: '', dia_encontro: '', horario: '' });
+  };
+
+  const startEdit = (t: typeof turmas[0]) => {
+    setEditingId(t.id);
+    const isPredefined = config.etapasDisponiveis.filter(e => e !== CUSTOM_OPTION).includes(t.etapa_nome);
+    setIsCustomEtapa(!isPredefined);
+    setForm({ ...form, etapa_nome: t.etapa_nome, ano: t.ano, faixa_etaria: t.faixa_etaria || '', dia_encontro: t.dia_encontro, horario: t.horario });
+    setIsModalOpen(true);
+  };
+
+  const handlePrintTurmas = () => {
+    const win = window.open('', '', 'width=900,height=700');
+    if (!win) return;
+    const turmasHtml = turmas.map(t => {
+      const participantes = catequizandos.filter(c => c.turma_id === t.id);
+      const lideres = catequistas.filter(c => c.turma_id === t.id);
+      const totalEncontros = encontros.filter(e => e.turma_id === t.id).length;
+      return `
+        <div class="turma">
+          <h2>${t.etapa_nome || labels.turma}</h2>
+          <div class="info-row"><strong>Dia:</strong> ${t.dia_encontro} &nbsp;|&nbsp; <strong>Horário:</strong> ${t.horario} &nbsp;|&nbsp; <strong>Ano:</strong> ${t.ano}${t.faixa_etaria ? ` &nbsp;|&nbsp; <strong>Faixa etária:</strong> ${t.faixa_etaria}` : ''}</div>
+          <div class="info-row"><strong>${labels.encontros}:</strong> ${totalEncontros} &nbsp;|&nbsp; <strong>${labels.participantes}:</strong> ${participantes.length}</div>
+          <h3>${labels.lideres} (${lideres.length})</h3>
+          ${lideres.length > 0 ? `<table><thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th></tr></thead><tbody>${lideres.map(l => `<tr><td>${l.nome}</td><td>${l.telefone || '-'}</td><td>${l.email || '-'}</td></tr>`).join('')}</tbody></table>` : '<p class="empty">Nenhum ${labels.lider.toLowerCase()} atribuído.</p>'}
+          <h3>${labels.participantes} (${participantes.length})</h3>
+          ${participantes.length > 0 ? `<table><thead><tr><th>Nome</th><th>Idade</th><th>Telefone</th><th>Responsável</th></tr></thead><tbody>${participantes.map(p => {
+            const age = p.data_nascimento ? Math.floor((Date.now() - new Date(p.data_nascimento).getTime()) / 31557600000) : '-';
+            const resp = (p.responsaveis && p.responsaveis.length > 0) ? p.responsaveis.map(r => `${r.nome} (${r.telefone})`).join(', ') : p.nome_responsavel ? `${p.nome_responsavel} (${p.telefone_responsavel})` : '-';
+            return `<tr><td>${p.nome_completo}</td><td>${age}</td><td>${p.telefone || '-'}</td><td>${resp}</td></tr>`;
+          }).join('')}</tbody></table>` : '<p class="empty">Nenhum ${labels.participante.toLowerCase()} cadastrado.</p>'}
+        </div>`;
+    }).join('');
+
+    win.document.write(`<html><head><title>Relatório de ${labels.turmas}</title>
+      <style>
+        body{font-family:Inter,sans-serif;padding:25px;color:#1a1a1a;font-size:12px}
+        .header{text-align:center;margin-bottom:20px;border-bottom:2px solid #e5e7eb;padding-bottom:12px}
+        .header h1{font-size:16px;font-weight:bold;margin:0;text-transform:uppercase}
+        .header p{font-size:11px;color:#666;margin:4px 0 0}
+        .turma{margin-bottom:28px;page-break-inside:avoid}
+        .turma h2{font-size:14px;background:#f0f4ff;padding:8px 12px;border-radius:6px;margin:0 0 8px;border-left:4px solid #4f46e5}
+        .turma h3{font-size:11px;text-transform:uppercase;color:#6b7280;margin:12px 0 6px;letter-spacing:0.5px}
+        .info-row{font-size:11px;color:#555;margin-bottom:4px}
+        table{width:100%;border-collapse:collapse;margin-top:4px}
+        th,td{border:1px solid #e5e7eb;padding:5px 8px;text-align:left;font-size:11px}
+        th{background:#f9fafb;font-weight:600;text-transform:uppercase;font-size:10px}
+        .empty{color:#9ca3af;font-style:italic;font-size:11px}
+        .footer{margin-top:30px;text-align:center;font-size:9px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:10px}
+        @media print{button{display:none}body{padding:0}}
+      </style></head><body>
+      <div class="header"><h1>${paroquia.nome}</h1><p>Relatório de ${labels.turmas} — ${user?.comunidade || ''}</p></div>
+      ${turmasHtml}
+      <div class="footer">Gerado pelo sistema PastoriAI — ${new Date().toLocaleDateString()}</div>
+      <script>window.print();</script></body></html>`);
+    win.document.close();
   };
 
   return (
@@ -64,14 +125,18 @@ const EstruturaView: React.FC = () => {
             Gerencie as {labels.turmas.toLowerCase()} da {labels.pastoralNome.toLowerCase()}. Crie {labels.turmas.toLowerCase()} para organizar {labels.participantes.toLowerCase()} e {labels.encontros.toLowerCase()}.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="bg-church-600 text-white px-4 py-2.5 rounded-xl font-semibold flex items-center hover:bg-church-700 transition-colors shadow-lg shadow-church-200"
-        >
-          <Plus size={20} className="mr-2" />
-          Nova {labels.turma}
-        </button>
+        <div className="flex gap-2">
+          <button type="button" onClick={handlePrintTurmas}
+            className="bg-white border border-gray-300 text-gray-700 px-3 py-2.5 rounded-xl font-semibold flex items-center hover:bg-gray-50 transition-colors">
+            <Printer size={18} className="mr-1.5" /> <span className="hidden sm:inline">Imprimir</span>
+          </button>
+          <button type="button"
+            onClick={() => { setEditingId(null); setIsCustomEtapa(false); setForm({ ...form, etapa_nome: config.etapasDisponiveis[0] || '', faixa_etaria: '', dia_encontro: '', horario: '' }); setIsModalOpen(true); }}
+            className="bg-church-600 text-white px-4 py-2.5 rounded-xl font-semibold flex items-center hover:bg-church-700 transition-colors shadow-lg shadow-church-200">
+            <Plus size={20} className="mr-2" />
+            Nova {labels.turma}
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -127,16 +192,18 @@ const EstruturaView: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {isCoordenador && (
-                  <button
-                    type="button"
-                    onClick={() => { setDeletingId(t.id); setDeleteError(''); }}
-                    className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 cursor-pointer"
-                    title={`Excluir ${labels.turma.toLowerCase()}`}
-                  >
-                    <Trash2 size={18} />
+                <div className="flex items-center gap-1 shrink-0">
+                  <button type="button" onClick={() => startEdit(t)}
+                    className="p-2 rounded-xl text-gray-400 hover:text-church-600 hover:bg-church-50 transition-colors cursor-pointer" title="Editar">
+                    <Pencil size={18} />
                   </button>
-                )}
+                  {isCoordenador && (
+                    <button type="button" onClick={() => { setDeletingId(t.id); setDeleteError(''); }}
+                      className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer" title="Excluir">
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
               </div>
               );
             })
@@ -204,8 +271,8 @@ const EstruturaView: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
             <div className="bg-church-600 p-5 flex justify-between items-center text-white">
-              <h3 className="font-bold text-lg">Nova {labels.turma}</h3>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="hover:bg-white/20 rounded-full p-1">
+              <h3 className="font-bold text-lg">{editingId ? `Editar ${labels.turma}` : `Nova ${labels.turma}`}</h3>
+              <button type="button" onClick={() => { setIsModalOpen(false); setEditingId(null); }} className="hover:bg-white/20 rounded-full p-1">
                 <X size={20} />
               </button>
             </div>
@@ -213,15 +280,32 @@ const EstruturaView: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{labels.etapa}</label>
                 <select
-                  required
-                  value={form.etapa_nome}
-                  onChange={(e) => setForm({ ...form, etapa_nome: e.target.value })}
+                  value={isCustomEtapa ? CUSTOM_OPTION : form.etapa_nome}
+                  onChange={(e) => {
+                    if (e.target.value === CUSTOM_OPTION) {
+                      setIsCustomEtapa(true);
+                      setForm({ ...form, etapa_nome: '' });
+                    } else {
+                      setIsCustomEtapa(false);
+                      setForm({ ...form, etapa_nome: e.target.value });
+                    }
+                  }}
                   className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-church-500 outline-none"
                 >
                   {config.etapasDisponiveis.map((et) => (
                     <option key={et} value={et}>{et}</option>
                   ))}
                 </select>
+                {isCustomEtapa && (
+                  <input
+                    type="text"
+                    required
+                    value={form.etapa_nome}
+                    onChange={(e) => setForm({ ...form, etapa_nome: e.target.value })}
+                    placeholder="Digite o nome da turma"
+                    className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-church-500 outline-none mt-2"
+                  />
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -272,7 +356,7 @@ const EstruturaView: React.FC = () => {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setEditingId(null); }}
                   className="flex-1 py-3 rounded-xl font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   Cancelar
@@ -281,7 +365,7 @@ const EstruturaView: React.FC = () => {
                   type="submit"
                   className="flex-1 bg-church-600 text-white py-3 rounded-xl font-semibold hover:bg-church-700 transition-colors"
                 >
-                  Criar {labels.turma}
+                  {editingId ? 'Salvar' : `Criar ${labels.turma}`}
                 </button>
               </div>
             </form>

@@ -10,6 +10,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   getSessionToken: () => Promise<string | null>;
+  updateUserAvatar: (avatarUrl: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,6 +41,7 @@ function resolveRole(profileRole: unknown): UserRole {
 }
 
 function mapProfileToUser(profile: any, email: string): User {
+  const savedAvatar = typeof localStorage !== 'undefined' ? localStorage.getItem(`user_avatar_${profile.id}`) : null;
   return {
     id: profile.id,
     name: profile.nome || email.split('@')[0],
@@ -50,7 +52,7 @@ function mapProfileToUser(profile: any, email: string): User {
     comunidade_id: profile.comunidade_id || '',
     comunidade: profile.comunidade_nome || '',
     pastoral_type: (profile.pastoral_type as PastoralType) || PastoralType.CATEQUESE,
-    avatar: profile.nome?.charAt(0) || 'U',
+    avatar: savedAvatar || profile.nome?.charAt(0) || 'U',
   };
 }
 
@@ -241,6 +243,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return session?.access_token ?? null;
   };
 
+  const updateUserAvatar = (avatarUrl: string) => {
+    setUser(prev => {
+      if (!prev) return null;
+      localStorage.setItem(`user_avatar_${prev.id}`, avatarUrl);
+      return { ...prev, avatar: avatarUrl };
+    });
+  };
+
   const logout = async () => {
     try {
       if (useSupabase && supabase) {
@@ -254,7 +264,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user, getSessionToken }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user, getSessionToken, updateUserAvatar }}>
       {children}
     </AuthContext.Provider>
   );

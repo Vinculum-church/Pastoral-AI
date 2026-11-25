@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Plus, User, Droplets, MessageCircle, HeartHandshake, MapPin, X, Trash2, Smartphone, Printer, Briefcase, Calendar, Mail, BookOpen, Church, ChevronDown, Send, UserPlus, Info } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Search, Plus, User, Droplets, MessageCircle, HeartHandshake, MapPin, X, Trash2, Smartphone, Printer, Calendar, Mail, BookOpen, Church, ChevronDown, Send, UserPlus, Info, Eye, Home, Camera } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
@@ -13,7 +13,7 @@ interface PeopleManagerProps {
 }
 
 const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participantes' }) => {
-  const { catequizandos, familias, catequistas, turmas, addCatequizando, updateCatequizando, addFamilia, addCatequista, paroquia } = useData();
+  const { catequizandos, familias, catequistas, turmas, addCatequizando, updateCatequizando, removeCatequizando, addFamilia, addCatequista, updateCatequista, paroquia } = useData();
   const { user, getSessionToken } = useAuth();
   const { labels, pastoralType } = usePastoral();
   const hasSupabase = isSupabaseConfigured();
@@ -28,17 +28,38 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
   const [filterEtapa, setFilterEtapa] = useState('');
   const [filterAno, setFilterAno] = useState('');
 
+  const [viewingStudent, setViewingStudent] = useState<Catequizando | null>(null);
+  const [deletingStudentId, setDeletingStudentId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+
+  const fotoInputRef = useRef<HTMLInputElement>(null);
+
   const [studentForm, setStudentForm] = useState({
      nome_completo: '',
      data_nascimento: '',
-     telefone: '', 
+     telefone: '',
+     endereco: '',
      turma_id: '',
      batismo: false,
      eucaristia: false,
      crisma: false,
      observacoes_pastorais: '',
      familia_id: '',
+     foto_url: '',
   });
+
+  const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setStudentForm(prev => ({ ...prev, foto_url: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   const [responsaveisList, setResponsaveisList] = useState<ResponsavelSimples[]>([]);
   const [tempResponsavel, setTempResponsavel] = useState<ResponsavelSimples>({
@@ -62,6 +83,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
     observacoes: ''
   });
   const [liderError, setLiderError] = useState('');
+  const [editingLiderId, setEditingLiderId] = useState<string | null>(null);
 
   const uniqueEtapas = Array.from(new Set(turmas.map(t => t.etapa_nome).filter(Boolean))) as string[];
   const uniqueAnos = Array.from(new Set(turmas.map(t => t.ano))).sort((a: number, b: number) => b - a);
@@ -167,7 +189,6 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
             <tr>
               <th>Nome</th>
               <th>Telefone / E-mail</th>
-              <th>Tempo de Serviço</th>
               <th>${labels.turma} Atual</th>
             </tr>
           </thead>
@@ -178,7 +199,6 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                  <tr>
                    <td>${cat.nome}</td>
                    <td>${cat.telefone}<br>${cat.email}</td>
-                   <td>${cat.tempo_servico_anos} anos</td>
                    <td>${turma?.etapa_nome || `Sem ${labels.turma.toLowerCase()}`}</td>
                  </tr>
                `;
@@ -225,12 +245,14 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
       nome_completo: student.nome_completo,
       data_nascimento: student.data_nascimento,
       telefone: student.telefone || '',
+      endereco: student.endereco || '',
       turma_id: student.turma_id,
       batismo: student.sacramentos.batismo,
       eucaristia: student.sacramentos.eucaristia,
       crisma: student.sacramentos.crisma,
       observacoes_pastorais: student.observacoes_pastorais,
       familia_id: student.familia_id || '',
+      foto_url: student.foto_url || '',
     });
     setResponsaveisList(student.responsaveis || []);
     setTempResponsavel({ nome: '', parentesco: 'Mãe', telefone: '' });
@@ -243,13 +265,15 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
     setStudentForm({
         nome_completo: '',
         data_nascimento: '',
-        telefone: '', 
+        telefone: '',
+        endereco: '',
         turma_id: '',
         batismo: false,
         eucaristia: false,
         crisma: false,
         observacoes_pastorais: '',
         familia_id: '',
+        foto_url: '',
     });
     setResponsaveisList([]);
     setTempResponsavel({ nome: '', parentesco: 'Mãe', telefone: '' });
@@ -269,7 +293,9 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
         nome_completo: studentForm.nome_completo,
         data_nascimento: studentForm.data_nascimento,
         telefone: studentForm.telefone,
+        endereco: studentForm.endereco,
         turma_id: studentForm.turma_id,
+        foto_url: studentForm.foto_url,
         sacramentos: {
             batismo: studentForm.batismo,
             eucaristia: studentForm.eucaristia,
@@ -342,6 +368,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
     await addCatequista(dataForLider);
 
     setIsModalOpen(false);
+    setEditingLiderId(null);
     setNewCatequista({
         nome: '',
         email: '',
@@ -354,6 +381,44 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
         experiencia_anterior: '',
         observacoes: ''
     });
+  };
+
+  const handleEditLider = (cat: Catequista) => {
+    setEditingLiderId(cat.id);
+    setNewCatequista({
+      nome: cat.nome,
+      email: cat.email || '',
+      senha: '',
+      telefone: cat.telefone || '',
+      data_nascimento: cat.data_nascimento || '',
+      tempo_servico_anos: cat.tempo_servico_anos || 0,
+      comunidade_id: cat.comunidade_id || '',
+      turma_id: cat.turma_id || '',
+      experiencia_anterior: cat.experiencia_anterior || '',
+      observacoes: cat.observacoes || '',
+    });
+    setActiveTab('lideres');
+    setIsModalOpen(true);
+  };
+
+  const handleUpdateLider = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLiderId) return;
+    const existing = catequistas.find(c => c.id === editingLiderId);
+    if (!existing) return;
+    await updateCatequista({
+      ...existing,
+      nome: newCatequista.nome,
+      telefone: newCatequista.telefone,
+      data_nascimento: newCatequista.data_nascimento,
+      turma_id: newCatequista.turma_id,
+      tempo_servico_anos: newCatequista.tempo_servico_anos,
+      experiencia_anterior: newCatequista.experiencia_anterior,
+      observacoes: newCatequista.observacoes,
+    });
+    setIsModalOpen(false);
+    setEditingLiderId(null);
+    setNewCatequista({ nome: '', email: '', senha: '', telefone: '', data_nascimento: '', tempo_servico_anos: 0, comunidade_id: '', turma_id: '', experiencia_anterior: '', observacoes: '' });
   };
 
   const getAllContacts = () => {
@@ -387,19 +452,19 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
            <h2 className="font-serif text-2xl font-semibold text-gray-900">Gestão de Pessoas</h2>
            <p className="text-gray-500 text-sm">{labels.participantes}, {labels.equipe} e Marketing.</p>
         </div>
-        <div className="flex space-x-2">
-            <button onClick={handlePrintList} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-semibold flex items-center hover:bg-gray-50 transition-colors">
-                <Printer size={20} className="mr-2" /> Imprimir
+        <div className="flex gap-2 w-full md:w-auto">
+            <button onClick={handlePrintList} className="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg font-semibold flex items-center hover:bg-gray-50 transition-colors text-sm">
+                <Printer size={18} className="mr-1.5" /> <span className="hidden sm:inline">Imprimir</span>
             </button>
-            <button onClick={() => { resetParticipanteForm(); setIsModalOpen(true); }} className="bg-church-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center hover:bg-church-700 transition-colors shadow-sm shadow-church-200">
-                <Plus size={20} className="mr-2" /> Novo Cadastro
+            <button onClick={() => { resetParticipanteForm(); setIsModalOpen(true); }} className="flex-1 md:flex-none bg-church-600 text-white px-3 py-2 rounded-lg font-semibold flex items-center justify-center hover:bg-church-700 transition-colors shadow-sm shadow-church-200 text-sm">
+                <Plus size={18} className="mr-1.5" /> Novo Cadastro
             </button>
         </div>
       </div>
 
       {/* TABS */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+      <div className="border-b border-gray-200 overflow-x-auto">
+        <nav className="-mb-px flex space-x-4 md:space-x-8 min-w-max">
           <button
             onClick={() => setActiveTab('participantes')}
             className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
@@ -478,81 +543,49 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
       {/* CONTENT LIST */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {activeTab === 'participantes' && (
-            <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome / Idade</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{labels.turma}</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sacramentos</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsáveis</th>
-                        <th className="px-6 py-3 text-right">Ações</th>
-                    </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredParticipantes.map((student) => {
-                        const turma = turmas.find(t => t.id === student.turma_id);
-                        const displayResponsaveis = (student.responsaveis && student.responsaveis.length > 0)
-                            ? student.responsaveis
-                            : [{ nome: student.nome_responsavel, telefone: student.telefone_responsavel }];
-
-                        return (
-                            <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <div className="h-8 w-8 rounded-full bg-church-100 flex items-center justify-center text-church-600 font-bold mr-3 text-xs border border-church-200">
-                                            {student.nome_completo.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <div className="text-sm font-bold text-gray-900">{student.nome_completo}</div>
-                                            <div className="text-xs text-gray-500 flex items-center gap-2">
-                                                <span>{calculateAge(student.data_nascimento)} anos</span>
-                                                {student.telefone && (
-                                                    <div 
-                                                        onClick={() => openWhatsApp(student.telefone, `Olá, gostaria de informações sobre a ${labels.pastoralNome.toLowerCase()}.`)}
-                                                        className="text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer flex items-center text-[10px] font-medium"
-                                                        title="Clique para abrir WhatsApp"
-                                                    >
-                                                        <MessageCircle size={12} className="mr-1 text-emerald-500 fill-emerald-500/10"/> {student.telefone}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {turma?.etapa_nome || '-'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <div className="flex space-x-1">
-                                        <span className={`px-2 py-0.5 inline-flex text-[10px] font-bold uppercase rounded-full border ${student.sacramentos.batismo ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>Batismo</span>
-                                        <span className={`px-2 py-0.5 inline-flex text-[10px] font-bold uppercase rounded-full border ${student.sacramentos.eucaristia ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>Euc.</span>
-                                        <span className={`px-2 py-0.5 inline-flex text-[10px] font-bold uppercase rounded-full border ${student.sacramentos.crisma ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>Crisma</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-500">
-                                    <div className="flex flex-col space-y-1">
-                                        {displayResponsaveis.map((r, i) => (
-                                            <div key={i} className="flex flex-col">
-                                                <span className="font-medium text-gray-700 text-xs">{r.nome}</span>
-                                                <div 
-                                                    onClick={() => openWhatsApp(r.telefone, `Olá, gostaria de informações sobre a ${labels.pastoralNome.toLowerCase()}.`)}
-                                                    className="text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer flex items-center text-[10px] font-medium mt-0.5"
-                                                    title="Clique para abrir WhatsApp"
-                                                >
-                                                    <MessageCircle size={12} className="mr-1 text-emerald-500 fill-emerald-500/10"/> {r.telefone}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onClick={() => handleEditParticipante(student)} className="text-church-600 hover:text-church-900 font-semibold">Editar</button>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+          <div className="divide-y divide-gray-100">
+            {filteredParticipantes.length === 0 ? (
+              <div className="p-8 text-center text-gray-400">
+                <User size={40} className="mx-auto mb-3 opacity-30" />
+                <p className="font-medium">Nenhum {labels.participante.toLowerCase()} encontrado.</p>
+              </div>
+            ) : (
+              filteredParticipantes.map((student) => {
+                const turma = turmas.find(t => t.id === student.turma_id);
+                return (
+                  <div key={student.id} className="p-4 hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => setViewingStudent(student)}>
+                    <div className="flex items-center gap-3">
+                      {student.foto_url ? (
+                        <img src={student.foto_url} alt={student.nome_completo} className="h-10 w-10 rounded-full object-cover border border-church-200 shrink-0" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-church-100 flex items-center justify-center text-church-600 font-bold text-sm border border-church-200 shrink-0">
+                          {student.nome_completo.charAt(0)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-bold text-gray-900 truncate">{student.nome_completo}</h4>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={(e) => { e.stopPropagation(); setViewingStudent(student); }} className="p-1.5 rounded-lg text-gray-400 hover:text-church-600 hover:bg-church-50 transition-colors" title="Ver detalhes"><Eye size={16} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleEditParticipante(student); }} className="text-church-600 hover:text-church-900 text-xs font-semibold px-2 py-1">Editar</button>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                          <span className="text-xs text-gray-500">{calculateAge(student.data_nascimento)} anos</span>
+                          {turma && <span className="text-xs text-church-600 font-medium bg-church-50 px-2 py-0.5 rounded-full">{turma.etapa_nome}</span>}
+                          <div className="flex gap-1">
+                            <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-full border ${student.sacramentos.batismo ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>Bat</span>
+                            <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-full border ${student.sacramentos.eucaristia ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>Euc</span>
+                            <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-full border ${student.sacramentos.crisma ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>Cri</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         )}
 
         {activeTab === 'lideres' && (
@@ -565,7 +598,10 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                                  {cat.nome.charAt(0)}
                              </div>
                              <div className="flex-1">
-                                 <h3 className="font-bold text-gray-900">{cat.nome}</h3>
+                                 <div className="flex items-center justify-between">
+                                   <h3 className="font-bold text-gray-900">{cat.nome}</h3>
+                                   <button onClick={() => handleEditLider(cat)} className="text-church-600 hover:text-church-900 text-xs font-semibold cursor-pointer">Editar</button>
+                                 </div>
                                  <p className="text-sm text-gray-500 mb-2">{turma ? `${labels.lider} de ${turma.etapa_nome}` : `Sem ${labels.turma.toLowerCase()} atribuída`}</p>
                                  <div className="text-xs text-gray-500 space-y-1">
                                      <div 
@@ -575,7 +611,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                                      >
                                          <MessageCircle size={12} className="mr-1 text-emerald-500 fill-emerald-500/10"/> {cat.telefone}
                                      </div>
-                                     <div className="flex items-center"><Briefcase size={12} className="mr-1"/> {cat.tempo_servico_anos} anos de experiência</div>
+                                     {cat.email && <div className="flex items-center"><Mail size={12} className="mr-1"/> {cat.email}</div>}
                                  </div>
                              </div>
                          </div>
@@ -643,6 +679,195 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
         )}
       </div>
 
+      {/* Modal - Visualizar Catequizando */}
+      {viewingStudent && (() => {
+        const student = viewingStudent;
+        const turma = turmas.find(t => t.id === student.turma_id);
+        const displayResp = (student.responsaveis && student.responsaveis.length > 0)
+          ? student.responsaveis
+          : student.nome_responsavel ? [{ nome: student.nome_responsavel, telefone: student.telefone_responsavel, parentesco: '' }] : [];
+
+        const handlePrintStudent = () => {
+          const win = window.open('', '', 'width=800,height=600');
+          if (!win) return;
+          const sacramentos = [];
+          if (student.sacramentos.batismo) sacramentos.push('Batismo');
+          if (student.sacramentos.eucaristia) sacramentos.push('1ª Eucaristia');
+          if (student.sacramentos.crisma) sacramentos.push('Crisma');
+          const respHtml = displayResp.map(r => `<p><strong>${r.nome}</strong>${r.parentesco ? ` (${r.parentesco})` : ''} — ${r.telefone}</p>`).join('');
+          win.document.write(`<html><head><title>Ficha - ${student.nome_completo}</title>
+            <style>body{font-family:Inter,sans-serif;padding:30px;color:#1a1a1a;max-width:600px;margin:0 auto}
+            h1{font-size:18px;border-bottom:2px solid #e5e7eb;padding-bottom:8px}
+            .section{margin-top:16px} .section h2{font-size:13px;text-transform:uppercase;color:#6b7280;margin-bottom:6px}
+            .field{margin-bottom:6px;font-size:13px} .field strong{display:inline-block;width:140px;color:#374151}
+            .footer{margin-top:30px;text-align:center;font-size:9px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:10px}
+            @media print{button{display:none}}</style></head><body>
+            <h1>${student.nome_completo}</h1>
+            <div class="section"><h2>Dados Pessoais</h2>
+              <div class="field"><strong>Data de Nasc.:</strong> ${student.data_nascimento ? new Date(student.data_nascimento + 'T12:00').toLocaleDateString('pt-BR') : '-'} (${calculateAge(student.data_nascimento)} anos)</div>
+              <div class="field"><strong>Telefone:</strong> ${student.telefone || '-'}</div>
+              <div class="field"><strong>Endereço:</strong> ${student.endereco || '-'}</div>
+              <div class="field"><strong>${labels.turma}:</strong> ${turma?.etapa_nome || '-'} ${turma ? `(${turma.dia_encontro} - ${turma.horario})` : ''}</div>
+            </div>
+            <div class="section"><h2>Sacramentos Recebidos</h2>
+              <div class="field">${sacramentos.length > 0 ? sacramentos.join(', ') : 'Nenhum registrado'}</div>
+            </div>
+            <div class="section"><h2>Responsáveis</h2>${respHtml || '<p>Nenhum cadastrado</p>'}</div>
+            ${student.observacoes_pastorais ? `<div class="section"><h2>Observações</h2><p style="font-size:13px">${student.observacoes_pastorais}</p></div>` : ''}
+            <div class="footer">Gerado pelo sistema PastoriAI — ${new Date().toLocaleDateString()}</div>
+            <script>window.print();</script></body></html>`);
+          win.document.close();
+        };
+
+        return (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setViewingStudent(null)}>
+            <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="bg-church-600 p-5 flex justify-between items-center text-white sticky top-0 z-10">
+                <h3 className="font-bold text-lg truncate mr-2">{student.nome_completo}</h3>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={handlePrintStudent} className="hover:bg-white/20 rounded-full p-1.5 transition-colors" title="Imprimir ficha"><Printer size={18} /></button>
+                  <button onClick={() => setViewingStudent(null)} className="hover:bg-white/20 rounded-full p-1.5 transition-colors"><X size={20} /></button>
+                </div>
+              </div>
+              <div className="p-5 space-y-5">
+                <div className="flex items-center gap-4">
+                  {student.foto_url ? (
+                    <img src={student.foto_url} alt={student.nome_completo} className="h-16 w-16 rounded-full object-cover border-2 border-church-200 shrink-0" />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-church-100 flex items-center justify-center text-church-600 font-bold text-2xl border-2 border-church-200 shrink-0">
+                      {student.nome_completo.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-lg font-bold text-gray-900">{student.nome_completo}</h4>
+                    <p className="text-sm text-gray-500">{calculateAge(student.data_nascimento)} anos {turma ? `· ${turma.etapa_nome}` : ''}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Data de Nascimento</p>
+                    <p className="text-sm font-medium text-gray-800">{student.data_nascimento ? new Date(student.data_nascimento + 'T12:00').toLocaleDateString('pt-BR') : '-'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Telefone</p>
+                    {student.telefone ? (
+                      <p className="text-sm font-medium text-emerald-600 cursor-pointer hover:underline flex items-center" onClick={() => openWhatsApp(student.telefone!)}>
+                        <MessageCircle size={14} className="mr-1" />{student.telefone}
+                      </p>
+                    ) : <p className="text-sm text-gray-400">-</p>}
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3 sm:col-span-2">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Endereço</p>
+                    <p className="text-sm font-medium text-gray-800">{student.endereco || '-'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3 sm:col-span-2">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{labels.turma}</p>
+                    <p className="text-sm font-medium text-gray-800">{turma ? `${turma.etapa_nome} — ${turma.dia_encontro}, ${turma.horario}` : '-'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Sacramentos</p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`px-3 py-1 text-xs font-bold rounded-full border ${student.sacramentos.batismo ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>Batismo</span>
+                    <span className={`px-3 py-1 text-xs font-bold rounded-full border ${student.sacramentos.eucaristia ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>1a Eucaristia</span>
+                    <span className={`px-3 py-1 text-xs font-bold rounded-full border ${student.sacramentos.crisma ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>Crisma</span>
+                  </div>
+                </div>
+
+                {displayResp.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Responsáveis</p>
+                    <div className="space-y-2">
+                      {displayResp.map((r, i) => (
+                        <div key={i} className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{r.nome} {r.parentesco && <span className="text-gray-400 font-normal">({r.parentesco})</span>}</p>
+                            <p className="text-xs text-gray-500">{r.telefone}</p>
+                          </div>
+                          {r.telefone && (
+                            <button onClick={() => openWhatsApp(r.telefone)} className="p-2 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shrink-0">
+                              <MessageCircle size={16} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {student.observacoes_pastorais && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Observações Pastorais</p>
+                    <p className="text-sm text-gray-700 bg-gray-50 rounded-xl p-3">{student.observacoes_pastorais}</p>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <button onClick={() => { setViewingStudent(null); handleEditParticipante(student); }}
+                    className="flex-1 bg-church-600 text-white py-3 rounded-xl font-semibold hover:bg-church-700 transition-colors text-sm min-w-[120px]">
+                    Editar Cadastro
+                  </button>
+                  <button onClick={handlePrintStudent}
+                    className="px-4 py-3 rounded-xl font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm flex items-center gap-2">
+                    <Printer size={16} /> Imprimir
+                  </button>
+                  {isCoordenador && (
+                    <button onClick={() => { setViewingStudent(null); setDeletingStudentId(student.id); setDeleteError(''); }}
+                      className="px-4 py-3 rounded-xl font-semibold border border-red-300 text-red-600 hover:bg-red-50 transition-colors text-sm flex items-center gap-2">
+                      <Trash2 size={16} /> Excluir
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Modal Confirmar Exclusão */}
+      {deletingStudentId && (() => {
+        const studentToDelete = catequizandos.find(c => c.id === deletingStudentId);
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+              <div className="bg-red-600 p-5 flex justify-between items-center text-white">
+                <h3 className="font-bold text-lg">Excluir {labels.participante}</h3>
+                <button type="button" onClick={() => setDeletingStudentId(null)} className="hover:bg-white/20 rounded-full p-1"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className="text-gray-700">
+                  Tem certeza que deseja excluir <strong>{studentToDelete?.nome_completo}</strong>?
+                </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+                  Todas as presenças registradas para este {labels.participante.toLowerCase()} também serão removidas.
+                </div>
+                {deleteError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">{deleteError}</div>
+                )}
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setDeletingStudentId(null)}
+                    className="flex-1 py-3 rounded-xl font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                    Cancelar
+                  </button>
+                  <button type="button" onClick={async () => {
+                    try {
+                      await removeCatequizando(deletingStudentId);
+                      setDeletingStudentId(null);
+                    } catch (err: any) {
+                      setDeleteError(err.message || 'Erro ao excluir.');
+                    }
+                  }} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-semibold hover:bg-red-700 transition-colors cursor-pointer">
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Modal - Novo Cadastro */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
@@ -660,10 +885,35 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
              <div className="p-6 md:p-8">
                 {activeTab === 'participantes' && (
                     <form onSubmit={handleSaveParticipante} className="space-y-8">
-                        
+
                         <div>
                             <h4 className="text-xs font-bold text-church-600 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Dados do {labels.participante}</h4>
                             <div className="space-y-4">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div
+                                      className="relative w-20 h-20 rounded-full cursor-pointer group"
+                                      onClick={() => fotoInputRef.current?.click()}
+                                      title="Clique para adicionar foto"
+                                    >
+                                      {studentForm.foto_url ? (
+                                        <img src={studentForm.foto_url} alt="Foto" className="w-20 h-20 rounded-full object-cover border-2 border-church-200" />
+                                      ) : (
+                                        <div className="w-20 h-20 rounded-full bg-church-50 border-2 border-dashed border-church-300 flex flex-col items-center justify-center text-church-400">
+                                          <Camera size={20} />
+                                          <span className="text-[10px] font-bold mt-1">Foto</span>
+                                        </div>
+                                      )}
+                                      <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Camera size={16} className="text-white" />
+                                      </div>
+                                    </div>
+                                    {studentForm.foto_url && (
+                                      <button type="button" onClick={() => setStudentForm(prev => ({ ...prev, foto_url: '' }))} className="text-xs text-red-500 hover:text-red-700">
+                                        Remover foto
+                                      </button>
+                                    )}
+                                    <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoUpload} />
+                                </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-800 mb-1.5">Nome Completo</label>
                                     <input type="text" required className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-church-500 outline-none text-gray-900 bg-gray-50 focus:bg-white transition-all" 
@@ -687,6 +937,18 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                                             <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                         </div>
                                      </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-800 mb-1.5">Telefone (opcional)</label>
+                                    <input type="text" className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-church-500 outline-none text-gray-900 bg-gray-50 focus:bg-white transition-all"
+                                        placeholder="(00) 00000-0000"
+                                        value={studentForm.telefone} onChange={e => setStudentForm({...studentForm, telefone: e.target.value})} />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-gray-800 mb-1.5">Endereço (opcional)</label>
+                                    <input type="text" className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-church-500 outline-none text-gray-900 bg-gray-50 focus:bg-white transition-all"
+                                        placeholder="Rua, número, bairro, cidade"
+                                        value={studentForm.endereco} onChange={e => setStudentForm({...studentForm, endereco: e.target.value})} />
                                 </div>
                             </div>
                         </div>
@@ -806,7 +1068,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                 )}
                 
                 {activeTab === 'lideres' && (
-                    <form onSubmit={handleSaveLider} className="space-y-6">
+                    <form onSubmit={editingLiderId ? handleUpdateLider : handleSaveLider} className="space-y-6">
                         <div>
                             <h4 className="font-semibold text-gray-900 border-b pb-2 mb-3 flex items-center text-sm uppercase tracking-wide">
                                 <User size={16} className="mr-2 text-church-600" />
@@ -868,16 +1130,18 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">E-mail *</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">E-mail {editingLiderId ? '' : '*'}</label>
                                     <input 
                                         type="email" 
-                                        required 
-                                        className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-church-500 outline-none text-gray-900" 
+                                        required={!editingLiderId}
+                                        disabled={!!editingLiderId}
+                                        className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-church-500 outline-none text-gray-900 disabled:bg-gray-100 disabled:text-gray-500" 
                                         value={newCatequista.email} 
                                         onChange={e => setNewCatequista({...newCatequista, email: e.target.value})} 
                                         placeholder="exemplo@email.com"
                                     />
                                 </div>
+                                {!editingLiderId && (
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-1">Senha *</label>
                                     <input 
@@ -890,6 +1154,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                                         minLength={6}
                                     />
                                 </div>
+                                )}
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-1">Telefone / WhatsApp *</label>
                                     <input 
@@ -913,7 +1178,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
 
                         <div className="pt-4 border-t border-gray-100">
                             <button type="submit" className="w-full bg-church-600 text-white py-3 rounded-xl font-bold hover:bg-church-700 transition-all shadow-sm">
-                                Salvar Cadastro do {labels.lider}
+                                {editingLiderId ? 'Salvar Alterações' : `Salvar Cadastro do ${labels.lider}`}
                             </button>
                         </div>
                     </form>

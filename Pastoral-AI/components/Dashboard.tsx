@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Users, AlertCircle, BookOpen, Gift, Shield, Plus, Trash2, X, Bell, ChevronRight, Clock, Search, MessageSquare, UserPlus, Sparkles, BarChart3, Church, Inbox } from 'lucide-react';
+import { Calendar, Users, AlertCircle, BookOpen, Gift, Shield, Plus, Trash2, X, Bell, ChevronRight, Clock, Search, MessageSquare, UserPlus, Sparkles, BarChart3, Church, Inbox, Pencil } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { usePastoral } from '../contexts/PastoralContext';
@@ -11,9 +11,10 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
   const { user } = useAuth();
-  const { encontros, catequizandos, turmas, catequistas, avisos, solicitacoes, addAviso, removeAviso } = useData();
+  const { encontros, catequizandos, turmas, catequistas, avisos, solicitacoes, addAviso, updateAviso, removeAviso } = useData();
   const { labels } = usePastoral();
   const [isAvisoModalOpen, setIsAvisoModalOpen] = useState(false);
+  const [editingAvisoId, setEditingAvisoId] = useState<string | null>(null);
   const [newAviso, setNewAviso] = useState({ titulo: '', conteudo: '', prioridade: AvisoPriority.NORMAL });
 
   const isCoordenador = user?.role === UserRole.COORDENADOR;
@@ -25,7 +26,12 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
   const myEncontros = encontros.filter(e => myTurmaIds.includes(e.turma_id));
   const myCatequizandos = isCoordenador ? catequizandos : catequizandos.filter(c => myTurmaIds.includes(c.turma_id));
 
-  const nextMeeting = myEncontros.find(e => !e.concluido);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingEncontros = [...myEncontros]
+    .filter(e => !e.concluido && new Date(e.data + 'T12:00') >= today)
+    .sort((a, b) => new Date(a.data + 'T12:00').getTime() - new Date(b.data + 'T12:00').getTime());
+  const nextMeeting = upcomingEncontros[0];
   const totalParticipantes = myCatequizandos.length;
   const statCard2Value = isCoordenador ? catequistas.length : turmas.length;
   const statCard2Label = isCoordenador ? labels.lideres : labels.turmas;
@@ -33,18 +39,35 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
   const atRiskStudents = 1; 
 
   const currentMonth = new Date().getMonth();
-  const birthdays = catequizandos.filter(c => {
+  const birthdays = myCatequizandos.filter(c => {
+    if (!c.data_nascimento) return false;
     const month = parseInt(c.data_nascimento.split('-')[1]) - 1; 
     return month === currentMonth;
+  }).sort((a, b) => {
+    const dayA = parseInt(a.data_nascimento.split('-')[2]);
+    const dayB = parseInt(b.data_nascimento.split('-')[2]);
+    return dayA - dayB;
   });
 
   const handleSaveAviso = (e: React.FormEvent) => {
     e.preventDefault();
     if (newAviso.titulo && newAviso.conteudo) {
-      addAviso(newAviso);
+      if (editingAvisoId) {
+        const existing = avisos.find(a => a.id === editingAvisoId);
+        if (existing) updateAviso({ ...existing, titulo: newAviso.titulo, conteudo: newAviso.conteudo, prioridade: newAviso.prioridade });
+      } else {
+        addAviso(newAviso);
+      }
       setNewAviso({ titulo: '', conteudo: '', prioridade: AvisoPriority.NORMAL });
+      setEditingAvisoId(null);
       setIsAvisoModalOpen(false);
     }
+  };
+
+  const startEditAviso = (aviso: typeof avisos[0]) => {
+    setEditingAvisoId(aviso.id);
+    setNewAviso({ titulo: aviso.titulo, conteudo: aviso.conteudo, prioridade: aviso.prioridade });
+    setIsAvisoModalOpen(true);
   };
 
   const StatCard = ({ title, value, subtext, icon: Icon, colorClass, bgClass, trend }: any) => (
@@ -100,9 +123,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
       </div>
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-church-900 via-church-800 to-church-700 text-white shadow-xl shadow-church-200/50">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-church-500/30 rounded-full blur-2xl"></div>
+      <div className="relative overflow-hidden rounded-3xl bg-blue-700 text-white shadow-xl shadow-blue-200/50">
         
         <div className="relative p-8 md:p-12">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
@@ -190,7 +211,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard 
           title={`Próximo ${labels.encontro}`}
-          value={nextMeeting ? new Date(nextMeeting.data).getDate().toString().padStart(2, '0') + '/' + (new Date(nextMeeting.data).getMonth()+1).toString().padStart(2, '0') : "--/--"} 
+          value={nextMeeting ? new Date(nextMeeting.data + 'T12:00').getDate().toString().padStart(2, '0') + '/' + (new Date(nextMeeting.data + 'T12:00').getMonth()+1).toString().padStart(2, '0') : "--/--"}
           subtext="Agenda Pastoral"
           icon={Calendar} 
           colorClass="text-blue-600"
@@ -235,14 +256,12 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
           
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="divide-y divide-gray-50">
-              {myEncontros.map((enc) => (
+              {upcomingEncontros.map((enc) => (
                 <div key={enc.id} role="button" tabIndex={0} onClick={() => setView(ViewState.ENCONTROS)} onKeyDown={(e) => e.key === 'Enter' && setView(ViewState.ENCONTROS)} className="p-5 hover:bg-gray-50 transition-colors group cursor-pointer flex items-center justify-between">
                   <div className="flex items-start space-x-5">
-                    <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl shadow-sm border ${
-                      enc.concluido ? 'bg-gray-50 border-gray-100 text-gray-400' : 'bg-white border-church-100 text-church-600'
-                    }`}>
-                      <span className="text-xs font-bold uppercase">{new Date(enc.data).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</span>
-                      <span className="text-xl font-bold">{new Date(enc.data).getDate()}</span>
+                    <div className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl shadow-sm border bg-white border-church-100 text-church-600">
+                      <span className="text-xs font-bold uppercase">{new Date(enc.data + 'T12:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</span>
+                      <span className="text-xl font-bold">{new Date(enc.data + 'T12:00').getDate()}</span>
                     </div>
                     <div>
                       <h4 className={`font-bold text-base mb-1 ${enc.concluido ? 'text-gray-500 line-through decoration-gray-300' : 'text-gray-900 group-hover:text-church-600 transition-colors'}`}>
@@ -264,7 +283,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
                   <ChevronRight size={20} className="text-gray-300 group-hover:text-church-500 transition-colors" />
                 </div>
               ))}
-              {encontros.length === 0 && (
+              {upcomingEncontros.length === 0 && (
                 <div className="p-10 text-center text-gray-400">
                   <Calendar size={48} className="mx-auto mb-4 opacity-20" />
                   <p>Nenhum {labels.encontro.toLowerCase()} agendado.</p>
@@ -285,7 +304,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
               </h3>
               {isCoordenador && (
                 <button 
-                  onClick={() => setIsAvisoModalOpen(true)}
+                  onClick={() => { setEditingAvisoId(null); setNewAviso({ titulo: '', conteudo: '', prioridade: AvisoPriority.NORMAL }); setIsAvisoModalOpen(true); }}
                   className="w-8 h-8 flex items-center justify-center bg-church-50 text-church-600 rounded-full hover:bg-church-100 transition-colors cursor-pointer"
                 >
                   <Plus size={16} />
@@ -321,12 +340,10 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
                     <div className="flex justify-between items-start">
                       <h5 className={`font-bold text-sm mb-1 ${textStyles}`}>{aviso.titulo}</h5>
                       {isCoordenador && (
-                        <button 
-                          onClick={() => removeAviso(aviso.id)}
-                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity absolute top-2 right-2"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 flex gap-1">
+                          <button onClick={() => startEditAviso(aviso)} className="text-gray-400 hover:text-church-600 cursor-pointer"><Pencil size={14} /></button>
+                          <button onClick={() => removeAviso(aviso.id)} className="text-red-400 hover:text-red-600 cursor-pointer"><Trash2 size={14} /></button>
+                        </div>
                       )}
                     </div>
                     <p className={`text-xs leading-relaxed ${subTextStyles}`}>{aviso.conteudo}</p>
@@ -348,19 +365,25 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
             </h3>
             {birthdays.length > 0 ? (
               <div className="space-y-3">
-                {birthdays.map(student => (
+                {birthdays.map(student => {
+                   const turma = turmas.find(t => t.id === student.turma_id);
+                   return (
                    <div key={student.id} className="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-pink-50/50">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-xs font-bold border border-pink-200">
                           {student.nome_completo.charAt(0)}
                         </div>
-                        <p className="text-sm font-semibold text-gray-800">{student.nome_completo.split(' ')[0]}</p>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{student.nome_completo.split(' ')[0]}</p>
+                          {turma && <p className="text-[10px] text-gray-400">{turma.etapa_nome}</p>}
+                        </div>
                       </div>
                       <span className="text-xs font-bold text-pink-500 bg-pink-50 px-2 py-1 rounded-md">
                         Dia {student.data_nascimento.split('-')[2]}
                       </span>
                    </div>
-                ))}
+                   );
+                })}
               </div>
             ) : (
               <p className="text-sm text-gray-400 text-center py-4">Nenhum aniversariante em {new Date().toLocaleDateString('pt-BR', {month: 'long'})}.</p>
@@ -374,8 +397,8 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
           <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl transform transition-all scale-100">
              <div className="bg-church-600 p-5 flex justify-between items-center text-white">
-                <h3 className="font-bold text-lg">Novo Aviso</h3>
-                <button onClick={() => setIsAvisoModalOpen(false)} className="hover:bg-white/20 rounded-full p-1 transition-colors"><X size={20} /></button>
+                <h3 className="font-bold text-lg">{editingAvisoId ? 'Editar Aviso' : 'Novo Aviso'}</h3>
+                <button onClick={() => { setIsAvisoModalOpen(false); setEditingAvisoId(null); }} className="hover:bg-white/20 rounded-full p-1 transition-colors"><X size={20} /></button>
              </div>
              <form onSubmit={handleSaveAviso} className="p-6 space-y-5">
                 <div>
@@ -415,7 +438,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setView }) => {
                   type="submit"
                   className="w-full bg-church-600 text-white py-3.5 rounded-xl font-bold hover:bg-church-700 transition-all shadow-lg shadow-church-200 transform active:scale-95 cursor-pointer"
                 >
-                   Publicar Aviso
+                   {editingAvisoId ? 'Salvar Alterações' : 'Publicar Aviso'}
                 </button>
              </form>
           </div>

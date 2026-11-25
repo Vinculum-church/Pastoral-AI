@@ -51,7 +51,7 @@ const AdminLogin: React.FC = () => {
             <Shield size={32} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Painel Admin</h1>
-          <p className="text-gray-500 text-sm mt-1 font-medium">Vinculum • Acesso restrito</p>
+          <p className="text-gray-500 text-sm mt-1 font-medium">Pastoral AI • Acesso restrito</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">

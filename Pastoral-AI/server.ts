@@ -46,6 +46,69 @@ async function startServer() {
     res.json({ paroquias: pRes.data || [], comunidades: cRes.data || [] });
   });
 
+  // Admin: buscar todos os dados (paróquias, comunidades, profiles) com service role
+  app.get("/api/admin/data", async (req, res) => {
+    if (!supabaseAdmin) {
+      return res.status(503).json({ error: "Supabase não configurado." });
+    }
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "Token ausente." });
+
+    const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !caller) return res.status(401).json({ error: "Sessão inválida." });
+
+    const { data: callerProfile } = await supabaseAdmin.from("profiles").select("role").eq("id", caller.id).single();
+    const role = typeof callerProfile?.role === "object" ? (callerProfile.role as any).value : String(callerProfile?.role || "");
+    if (!role.toLowerCase().includes("admin")) {
+      return res.status(403).json({ error: "Acesso restrito a administradores." });
+    }
+
+    const [pRes, cRes, profRes] = await Promise.all([
+      supabaseAdmin.from("paroquias").select("id, nome, endereco, telefone").order("nome"),
+      supabaseAdmin.from("comunidades").select("id, paroquia_id, nome, padroeiro").order("nome"),
+      supabaseAdmin.from("profiles").select("id, nome, email, role, paroquia_id, comunidade_id, pastoral_type").order("nome"),
+    ]);
+
+    res.json({
+      paroquias: pRes.data || [],
+      comunidades: cRes.data || [],
+      profiles: (profRes.data || []).map((p: any) => ({
+        ...p,
+        role: typeof p.role === "object" ? (p.role as any).value : String(p.role || ""),
+      })),
+    });
+  });
+
+  // Admin: mutações genéricas (insert/update/delete) com service role
+  app.post("/api/admin/mutation", async (req, res) => {
+    if (!supabaseAdmin) return res.status(503).json({ error: "Supabase não configurado." });
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "Token ausente." });
+
+    const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !caller) return res.status(401).json({ error: "Sessão inválida." });
+
+    const { data: callerProfile } = await supabaseAdmin.from("profiles").select("role").eq("id", caller.id).single();
+    const role = typeof callerProfile?.role === "object" ? (callerProfile.role as any).value : String(callerProfile?.role || "");
+    if (!role.toLowerCase().includes("admin")) return res.status(403).json({ error: "Acesso restrito a administradores." });
+
+    const { table, action, data, id } = req.body;
+    const ALLOWED_TABLES = ["paroquias", "comunidades", "profiles"];
+    const ALLOWED_ACTIONS = ["insert", "update", "delete"];
+    if (!ALLOWED_TABLES.includes(table) || !ALLOWED_ACTIONS.includes(action)) return res.status(400).json({ error: "Operação não permitida." });
+
+    try {
+      let result: any;
+      if (action === "insert") result = await supabaseAdmin.from(table).insert(data).select().single();
+      else if (action === "update") { if (!id) return res.status(400).json({ error: "ID obrigatório." }); result = await supabaseAdmin.from(table).update(data).eq("id", id); }
+      else if (action === "delete") { if (!id) return res.status(400).json({ error: "ID obrigatório." }); result = await supabaseAdmin.from(table).delete().eq("id", id); }
+      if (result?.error) return res.status(400).json({ error: result.error.message });
+      res.json({ success: true, data: result?.data });
+    } catch (err: any) { res.status(500).json({ error: err.message || "Erro interno." }); }
+  });
+
   // Convite de usuário (apenas coordenador)
   app.post("/api/invite-user", async (req, res) => {
     if (!supabaseAdmin) {

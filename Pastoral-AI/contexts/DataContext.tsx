@@ -42,15 +42,21 @@ interface DataContextType {
 
   addCatequizando: (data: Omit<Catequizando, 'id'>) => Promise<void>;
   updateCatequizando: (catequizando: Catequizando) => Promise<void>;
+  removeCatequizando: (id: string) => Promise<void>;
   addFamilia: (data: Omit<Familia, 'id'>) => void;
   addCatequista: (data: Omit<Catequista, 'id'>) => Promise<void>;
+  updateCatequista: (catequista: Catequista) => Promise<void>;
   addEncontro: (data: Omit<Encontro, 'id'>) => Promise<void>;
   updateEncontro: (encontro: Encontro) => Promise<void>;
   updatePresenca: (presenca: Presenca) => Promise<void>;
   addMaterial: (data: Omit<MaterialApoio, 'id' | 'data_adicao'>) => Promise<void>;
+  updateMaterial: (material: MaterialApoio) => Promise<void>;
+  removeMaterial: (id: string) => Promise<void>;
   addAviso: (data: Omit<Aviso, 'id' | 'data_publicacao'>) => Promise<void>;
+  updateAviso: (aviso: Aviso) => Promise<void>;
   removeAviso: (id: string) => Promise<void>;
   addTurma: (data: Omit<Turma, 'id'>) => Promise<void>;
+  updateTurma: (turma: Turma) => Promise<void>;
   removeTurma: (id: string) => Promise<void>;
   aprovarSolicitacao: (solicitacao: Solicitacao, turmaId: string) => Promise<void>;
   rejeitarSolicitacao: (id: string) => Promise<void>;
@@ -70,6 +76,8 @@ function rowToParticipante(row: any): Catequizando {
     nome_completo: row.nome_completo,
     data_nascimento: row.data_nascimento || '',
     telefone: row.telefone || '',
+    endereco: row.endereco || '',
+    foto_url: row.foto_url || '',
     nome_responsavel: primary.nome || '',
     telefone_responsavel: primary.telefone || '',
     responsaveis: responsaveis,
@@ -87,6 +95,8 @@ function participanteToRow(data: Omit<Catequizando, 'id'>, paroquiaId: string, p
     nome_completo: data.nome_completo,
     data_nascimento: data.data_nascimento || null,
     telefone: data.telefone || null,
+    endereco: data.endereco || null,
+    foto_url: data.foto_url || null,
     sacramentos: data.sacramentos,
     observacoes: data.observacoes_pastorais || '',
     responsaveis: data.responsaveis || [],
@@ -393,6 +403,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       nome_completo: catequizando.nome_completo,
       data_nascimento: catequizando.data_nascimento || null,
       telefone: catequizando.telefone || null,
+      endereco: catequizando.endereco || null,
+      foto_url: catequizando.foto_url || null,
       sacramentos: catequizando.sacramentos,
       observacoes: catequizando.observacoes_pastorais || '',
       responsaveis: catequizando.responsaveis || [],
@@ -400,6 +412,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (error) { console.error('Erro ao atualizar participante:', error); return; }
     setCatequizandos(prev => prev.map(c => c.id === catequizando.id ? catequizando : c));
+  };
+
+  const removeCatequizando = async (id: string) => {
+    if (!useDb) { setCatequizandos(prev => prev.filter(c => c.id !== id)); return; }
+    if (!supabase) return;
+    const { error } = await supabase.from('participantes').delete().eq('id', id);
+    if (error) { console.error('Erro ao remover participante:', error); throw new Error(error.message); }
+    setCatequizandos(prev => prev.filter(c => c.id !== id));
+    setPresencas(prev => prev.filter(p => p.catequizando_id !== id));
   };
 
   // ─── CRUD: Famílias (local only por enquanto) ─────────────────────────────
@@ -436,6 +457,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
     setCatequistas(prev => [...prev, rowToLider(inserted)]);
+  };
+
+  const updateCatequista = async (catequista: Catequista) => {
+    if (!useDb) { setCatequistas(prev => prev.map(c => c.id === catequista.id ? catequista : c)); return; }
+    if (!supabase) return;
+    const { error } = await supabase.from('lideres').update({
+      nome: catequista.nome,
+      email: catequista.email || null,
+      telefone: catequista.telefone || null,
+      data_nascimento: catequista.data_nascimento || null,
+      turma_id: catequista.turma_id || null,
+      tempo_servico_anos: catequista.tempo_servico_anos || 0,
+      experiencia: catequista.experiencia_anterior || '',
+      observacoes: catequista.observacoes || '',
+    }).eq('id', catequista.id);
+    if (error) { console.error('Erro ao atualizar líder:', error); return; }
+    setCatequistas(prev => prev.map(c => c.id === catequista.id ? catequista : c));
   };
 
   // ─── CRUD: Encontros ──────────────────────────────────────────────────────
@@ -544,6 +582,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setMateriais(prev => [rowToMaterial(inserted), ...prev]);
   };
 
+  const updateMaterial = async (material: MaterialApoio) => {
+    if (!useDb) { setMateriais(prev => prev.map(m => m.id === material.id ? material : m)); return; }
+    if (!supabase) return;
+    const { error } = await supabase.from('materiais').update({
+      titulo: material.titulo,
+      descricao: material.descricao,
+      tipo: material.tipo,
+      categoria: material.categoria,
+      url: material.url,
+    }).eq('id', material.id);
+    if (error) { console.error('Erro ao atualizar material:', error); return; }
+    setMateriais(prev => prev.map(m => m.id === material.id ? material : m));
+  };
+
+  const removeMaterial = async (id: string) => {
+    if (!useDb) { setMateriais(prev => prev.filter(m => m.id !== id)); return; }
+    if (!supabase) return;
+    const { error } = await supabase.from('materiais').delete().eq('id', id);
+    if (error) { console.error('Erro ao remover material:', error); return; }
+    setMateriais(prev => prev.filter(m => m.id !== id));
+  };
+
   // ─── CRUD: Avisos ─────────────────────────────────────────────────────────
 
   const addAviso = async (data: Omit<Aviso, 'id' | 'data_publicacao'>) => {
@@ -564,6 +624,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (error) { console.error(error); return; }
     setAvisos(prev => [rowToAviso(inserted), ...prev]);
+  };
+
+  const updateAviso = async (aviso: Aviso) => {
+    if (!useDb) { setAvisos(prev => prev.map(a => a.id === aviso.id ? aviso : a)); return; }
+    if (!supabase) return;
+    const { error } = await supabase.from('avisos').update({
+      titulo: aviso.titulo, conteudo: aviso.conteudo, prioridade: aviso.prioridade,
+    }).eq('id', aviso.id);
+    if (error) { console.error('Erro ao atualizar aviso:', error); return; }
+    setAvisos(prev => prev.map(a => a.id === aviso.id ? aviso : a));
   };
 
   const removeAviso = async (id: string) => {
@@ -639,6 +709,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setTurmas(prev => [...prev, rowToTurma(inserted)]);
   };
 
+  const updateTurma = async (turma: Turma) => {
+    if (!useDb) { setTurmas(prev => prev.map(t => t.id === turma.id ? turma : t)); return; }
+    if (!supabase) return;
+    const { error } = await supabase.from('turmas').update({
+      etapa_nome: turma.etapa_nome || '',
+      ano: turma.ano,
+      faixa_etaria: turma.faixa_etaria || '',
+      dia_encontro: turma.dia_encontro,
+      horario: turma.horario,
+    }).eq('id', turma.id);
+    if (error) { console.error('Erro ao atualizar turma:', error); return; }
+    setTurmas(prev => prev.map(t => t.id === turma.id ? turma : t));
+  };
+
   const removeTurma = async (id: string) => {
     if (!useDb) {
       setTurmas(prev => prev.filter(t => t.id !== id));
@@ -672,15 +756,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       loading,
       addCatequizando,
       updateCatequizando,
+      removeCatequizando,
       addFamilia,
       addCatequista,
+      updateCatequista,
       addEncontro,
       updateEncontro,
       updatePresenca,
       addMaterial,
+      updateMaterial,
+      removeMaterial,
       addAviso,
+      updateAviso,
       removeAviso,
       addTurma,
+      updateTurma,
       removeTurma,
       aprovarSolicitacao,
       rejeitarSolicitacao,

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, GraduationCap, Inbox } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, GraduationCap, Inbox, Camera } from 'lucide-react';
 import { ViewState, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
@@ -13,9 +13,25 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, updateUserAvatar } = useAuth();
   const { labels } = usePastoral();
   const { solicitacoes } = useData();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        updateUserAvatar(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const isAvatarImage = user?.avatar?.startsWith('data:') || user?.avatar?.startsWith('http');
 
   const NavItem = ({ view, icon: Icon, label, badge }: { view: ViewState; icon: any; label: string; badge?: number }) => {
     const isActive = currentView === view;
@@ -57,7 +73,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
           <div className="bg-church-600 p-1.5 rounded-lg text-white">
             <Church size={20} />
           </div>
-          <span className="font-bold text-lg tracking-tight">Vinculum</span>
+          <span className="font-bold text-lg tracking-tight">Pastoral AI</span>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -87,15 +103,29 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
               <Church size={28} />
             </div>
             <div>
-              <h1 className="font-bold text-xl leading-none tracking-tight text-gray-900">Vinculum</h1>
+              <h1 className="font-bold text-xl leading-none tracking-tight text-gray-900">Pastoral AI</h1>
               <p className="text-[11px] text-church-600 font-semibold uppercase tracking-wider mt-1.5">{labels.pastoralDescricao}</p>
             </div>
           </div>
 
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-3 mb-2">
-             <div className="w-10 h-10 rounded-full bg-church-50 border border-church-100 flex items-center justify-center text-church-700 font-bold text-sm shrink-0">
-                {user?.avatar || user?.name.charAt(0)}
+             <div
+               className="relative w-10 h-10 rounded-full shrink-0 cursor-pointer group"
+               onClick={() => avatarInputRef.current?.click()}
+               title="Clique para alterar foto de perfil"
+             >
+               {isAvatarImage ? (
+                 <img src={user!.avatar} alt="Foto de perfil" className="w-10 h-10 rounded-full object-cover border border-church-100" />
+               ) : (
+                 <div className="w-10 h-10 rounded-full bg-church-50 border border-church-100 flex items-center justify-center text-church-700 font-bold text-sm">
+                   {user?.avatar || user?.name.charAt(0)}
+                 </div>
+               )}
+               <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                 <Camera size={14} className="text-white" />
+               </div>
              </div>
+             <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
              <div className="overflow-hidden">
                 <p className="text-sm font-bold text-gray-900 truncate">{user?.name.split('/')[0]}</p>
                 <p className="text-[10px] text-gray-500 font-medium truncate">{user?.paroquia}</p>
@@ -138,7 +168,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
             <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
             <span>Voltar ao login</span>
           </button>
-          <p className="text-center text-[10px] text-gray-300">Versão 3.0 • Vinculum</p>
+          <p className="text-center text-[10px] text-gray-300">Versão 3.0 • Pastoral AI</p>
         </div>
       </aside>
 

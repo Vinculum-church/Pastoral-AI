@@ -139,7 +139,7 @@ const AttendanceReport: React.FC = () => {
             </tbody>
           </table>
           
-          <div class="footer">Gerado em ${new Date().toLocaleDateString()} - Sistema Vinculum</div>
+          <div class="footer">Gerado em ${new Date().toLocaleDateString()} - Pastoral AI</div>
           <script>window.print();</script>
         </body>
       </html>

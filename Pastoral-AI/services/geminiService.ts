@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 const GEMINI_MODEL_FLASH = "gemini-2.5-flash";
-const GEMINI_MODEL_PRO = "gemini-2.5-pro";
+const GEMINI_MODEL_PRO = "gemini-2.5-flash";
 
 const getAi = () => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -41,9 +41,16 @@ export const generateCatecheticalPlan = async (
     });
 
     return response.text || "Não foi possível gerar o plano neste momento.";
-  } catch (error) {
-    console.error("Erro ao gerar plano:", error);
-    return "Ocorreu um erro ao comunicar com o assistente IA. Por favor, verifique a chave de API.";
+  } catch (error: any) {
+    const msg = error?.message || String(error);
+    console.error("Erro ao gerar plano:", msg);
+    if (msg.includes('API_KEY') || msg.includes('api key') || msg.includes('PERMISSION_DENIED')) {
+      return "Chave de API inválida ou sem permissão. Verifique a VITE_GEMINI_API_KEY no arquivo .env.";
+    }
+    if (msg.includes('not found') || msg.includes('404')) {
+      return `Modelo não encontrado (${GEMINI_MODEL_FLASH}). Verifique se a chave tem acesso a este modelo.`;
+    }
+    return `Erro ao comunicar com a IA: ${msg}`;
   }
 };
 
@@ -148,8 +155,8 @@ export const generateMeetingScript = async (
     });
 
     return response.text || "";
-  } catch (error) {
-    console.error("Erro ao gerar roteiro:", error);
-    return "Erro ao gerar roteiro. Tente novamente.";
+  } catch (error: any) {
+    console.error("Erro ao gerar roteiro:", error?.message || error);
+    return `Erro ao gerar roteiro: ${error?.message || 'Tente novamente.'}`;
   }
 };

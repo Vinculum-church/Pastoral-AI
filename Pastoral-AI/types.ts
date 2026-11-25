@@ -108,13 +108,13 @@ export interface Catequizando {
   turma_id: string;
   nome_completo: string;
   data_nascimento: string;
-  telefone?: string; // Telefone do próprio catequizando
-  
-  // Mantidos para compatibilidade com relatórios legados (pega o 1º da lista)
-  nome_responsavel: string; 
-  telefone_responsavel: string; 
-  
-  // Nova estrutura para múltiplos responsáveis
+  telefone?: string;
+  endereco?: string;
+  foto_url?: string;
+
+  nome_responsavel: string;
+  telefone_responsavel: string;
+
   responsaveis: ResponsavelSimples[];
 
   sacramentos: {

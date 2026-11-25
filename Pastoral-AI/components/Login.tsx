@@ -66,7 +66,7 @@ const Login: React.FC = () => {
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-church-600 to-church-800 rounded-2xl flex items-center justify-center mb-4 text-white shadow-lg shadow-church-200">
             <Church size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Vinculum</h1>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Pastoral AI</h1>
           <p className="text-gray-500 text-sm mt-1 font-medium">Gestão Pastoral Inteligente</p>
           <a href="/fiel" className="inline-block mt-3 text-sm text-purple-600 hover:text-purple-700 font-medium hover:underline">
             Portal do Fiel (acesso sem cadastro)

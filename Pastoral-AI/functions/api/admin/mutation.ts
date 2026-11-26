@@ -12,7 +12,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-const ALLOWED_TABLES = ["paroquias", "comunidades", "profiles"];
+const ALLOWED_TABLES = ["paroquias", "comunidades", "profiles", "escola_conteudos"];
 const ALLOWED_ACTIONS = ["insert", "update", "delete"];
 
 export const onRequestOptions: PagesFunction<Env> = async () => {

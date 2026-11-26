@@ -91,7 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const timeoutId = setTimeout(() => {
       if (cancelled) return;
       setLoading(false);
-    }, 6000);
+    }, 15000);
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (cancelled) return;
@@ -161,35 +161,73 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
+  /**
+   * Busca o perfil com até 3 tentativas. Se o banco demorar (ex.: projeto "acordando")
+   * ou a junção com paróquia/comunidade falhar, busca os nomes separadamente.
+   * Se tudo falhar, usa a última cópia boa salva neste aparelho — assim a
+   * paróquia e a comunidade não "somem" por causa de uma falha de conexão.
+   */
   async function fetchProfile(userId: string) {
     if (!supabase) return null;
     const timeout = (ms: number) => new Promise<null>((resolve) => setTimeout(() => resolve(null), ms));
+    const comTempo = <T,>(p: PromiseLike<T>, ms: number) => Promise.race([p, timeout(ms)]) as Promise<T | null>;
+
+    for (let tentativa = 0; tentativa < 3; tentativa++) {
+      try {
+        let profile: any = null;
+        const r: any = await comTempo(
+          supabase
+            .from('profiles')
+            .select('id, nome, email, role, paroquia_id, comunidade_id, pastoral_type, paroquias ( nome ), comunidades ( nome )')
+            .eq('id', userId)
+            .maybeSingle(),
+          10000,
+        );
+        if (r && !r.error) {
+          profile = r.data;
+        } else if (r?.error) {
+          // Junção falhou: busca o perfil puro e os nomes à parte
+          const p: any = await comTempo(supabase.from('profiles').select('*').eq('id', userId).maybeSingle(), 10000);
+          if (p && !p.error) profile = p.data;
+        }
+        if (r && !r.error && !r.data) return null; // perfil realmente não existe
+        if (profile) {
+          let paroquia_nome = profile.paroquias?.nome || '';
+          let comunidade_nome = profile.comunidades?.nome || '';
+          if (!paroquia_nome && profile.paroquia_id) {
+            const q: any = await comTempo(supabase.from('paroquias').select('nome').eq('id', profile.paroquia_id).maybeSingle(), 6000);
+            paroquia_nome = q?.data?.nome || '';
+          }
+          if (!comunidade_nome && profile.comunidade_id) {
+            const q: any = await comTempo(supabase.from('comunidades').select('nome').eq('id', profile.comunidade_id).maybeSingle(), 6000);
+            comunidade_nome = q?.data?.nome || '';
+          }
+          // foto_url é buscada à parte: se a coluna ainda não existir, o login não quebra
+          let foto_url = profile.foto_url || '';
+          if (!foto_url) {
+            try {
+              const f: any = await comTempo(supabase.from('profiles').select('foto_url').eq('id', userId).maybeSingle(), 5000);
+              foto_url = f?.data?.foto_url || '';
+            } catch (_) {}
+          }
+          const completo = {
+            ...profile,
+            foto_url,
+            paroquia_nome: paroquia_nome || 'Paróquia',
+            comunidade_nome,
+            comunidade_id: profile.comunidade_id || null,
+          };
+          try { localStorage.setItem(`pastoriai_perfil_${userId}`, JSON.stringify(completo)); } catch (_) {}
+          return completo;
+        }
+      } catch (_) {}
+      await new Promise(res => setTimeout(res, 800 * (tentativa + 1)));
+    }
+
+    // Sem conexão com o banco: usa a última cópia boa deste aparelho
     try {
-      const result = await Promise.race([
-        supabase
-          .from('profiles')
-          .select('id, nome, email, role, paroquia_id, comunidade_id, pastoral_type, paroquias ( nome ), comunidades ( nome )')
-          .eq('id', userId)
-          .maybeSingle(),
-        timeout(8000).then(() => null),
-      ]);
-      if (!result || (result as any).error) return null;
-      const profile = (result as any).data;
-      if (profile) {
-        // foto_url é buscada à parte: se a coluna ainda não existir, o login não quebra
-        let foto_url = '';
-        try {
-          const f = await supabase.from('profiles').select('foto_url').eq('id', userId).maybeSingle();
-          foto_url = (f.data as any)?.foto_url || '';
-        } catch (_) {}
-        return {
-          ...profile,
-          foto_url,
-          paroquia_nome: profile.paroquias?.nome || 'Paróquia',
-          comunidade_nome: profile.comunidades?.nome || '',
-          comunidade_id: profile.comunidade_id || null,
-        };
-      }
+      const salvo = localStorage.getItem(`pastoriai_perfil_${userId}`);
+      if (salvo) return JSON.parse(salvo);
     } catch (_) {}
     return null;
   }

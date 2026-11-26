@@ -116,7 +116,7 @@ const Login: React.FC = () => {
                         {config.labels.pastoralNome}
                       </h3>
                       <p className="text-[11px] text-gray-500 leading-relaxed">
-                        {config.labels.participantes}, {config.labels.lideres}, {config.labels.encontros}
+                        {[config.labels.participantes, config.labels.lideres, config.labels.encontros].filter(l => l && l !== '-').join(', ')}
                       </p>
                       {isSelected && (
                         <div className={`absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center ${colors.iconBg}`}>

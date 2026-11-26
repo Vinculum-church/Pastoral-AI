@@ -504,12 +504,12 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
             />
         </div>
         {activeTab === 'participantes' && (
-            <>
+            <div className="grid grid-cols-2 gap-2 md:flex md:gap-4">
                 <div className="relative">
                     <select 
                         value={filterEtapa} 
                         onChange={e => setFilterEtapa(e.target.value)}
-                        className="appearance-none border border-gray-300 rounded-lg pl-3 pr-8 py-2 text-sm outline-none focus:border-church-500 bg-white min-w-[150px]"
+                        className="appearance-none border border-gray-300 rounded-lg pl-3 pr-8 py-2 text-sm outline-none focus:border-church-500 bg-white w-full md:min-w-[150px]"
                     >
                         <option value="">Todas as {labels.etapas}</option>
                         {uniqueEtapas.map(et => <option key={et} value={et}>{et}</option>)}
@@ -520,14 +520,14 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                     <select 
                         value={filterAno} 
                         onChange={e => setFilterAno(e.target.value)}
-                        className="appearance-none border border-gray-300 rounded-lg pl-3 pr-8 py-2 text-sm outline-none focus:border-church-500 bg-white min-w-[150px]"
+                        className="appearance-none border border-gray-300 rounded-lg pl-3 pr-8 py-2 text-sm outline-none focus:border-church-500 bg-white w-full md:min-w-[150px]"
                     >
                         <option value="">Todos os Anos</option>
                         {uniqueAnos.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
                     <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
-            </>
+            </div>
         )}
       </div>
 
@@ -543,35 +543,58 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
             ) : (
               filteredParticipantes.map((student) => {
                 const turma = turmas.find(t => t.id === student.turma_id);
+                // Contato principal: o 1º responsável (crianças) ou o telefone do próprio participante
+                const resp = (student.responsaveis && student.responsaveis.length > 0)
+                  ? student.responsaveis[0]
+                  : (student.telefone_responsavel ? { nome: student.nome_responsavel, telefone: student.telefone_responsavel, parentesco: '' } : null);
+                const contato = resp?.telefone ? resp : (student.telefone ? { nome: student.nome_completo.split(' ')[0], telefone: student.telefone, parentesco: '' } : null);
                 return (
-                  <div key={student.id} className="p-4 hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => setViewingStudent(student)}>
-                    <div className="flex items-center gap-3">
+                  <div key={student.id} className="flex items-stretch hover:bg-gray-50/60 active:bg-church-50 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => setViewingStudent(student)}
+                      className="flex-1 min-w-0 flex items-center gap-3 p-3 sm:p-4 text-left"
+                      aria-label={`Abrir ficha de ${student.nome_completo}`}
+                    >
                       {student.foto_url ? (
-                        <img src={student.foto_url} alt={student.nome_completo} className="h-10 w-10 rounded-full object-cover border border-church-200 shrink-0" />
+                        <img src={student.foto_url} alt="" className="h-12 w-12 rounded-full object-cover border border-church-200 shrink-0" />
                       ) : (
-                        <div className="h-10 w-10 rounded-full bg-church-100 flex items-center justify-center text-church-600 font-bold text-sm border border-church-200 shrink-0">
+                        <div className="h-12 w-12 rounded-full bg-church-100 flex items-center justify-center text-church-600 font-bold text-base border border-church-200 shrink-0">
                           {student.nome_completo.charAt(0)}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <h4 className="text-sm font-bold text-gray-900 truncate">{student.nome_completo}</h4>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={(e) => { e.stopPropagation(); setViewingStudent(student); }} className="p-1.5 rounded-lg text-gray-400 hover:text-church-600 hover:bg-church-50 transition-colors" title="Ver detalhes"><Eye size={16} /></button>
-                            <button onClick={(e) => { e.stopPropagation(); handleEditParticipante(student); }} className="text-church-600 hover:text-church-900 text-xs font-semibold px-2 py-1">Editar</button>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                        <h4 className="text-[15px] font-bold text-gray-900 truncate">{student.nome_completo}</h4>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
                           <span className="text-xs text-gray-500">{calculateAge(student.data_nascimento)} anos</span>
-                          {turma && <span className="text-xs text-church-600 font-medium bg-church-50 px-2 py-0.5 rounded-full">{turma.etapa_nome}</span>}
-                          <div className="flex gap-1">
-                            <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-full border ${student.sacramentos.batismo ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>Bat</span>
-                            <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-full border ${student.sacramentos.eucaristia ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>Euc</span>
-                            <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-full border ${student.sacramentos.crisma ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>Cri</span>
-                          </div>
+                          {turma && <span className="text-[11px] text-church-700 font-medium bg-church-50 px-2 py-0.5 rounded-full truncate max-w-[9rem]">{turma.etapa_nome}</span>}
+                          <span className="flex gap-1">
+                            <span title="Batismo" className={`w-2 h-2 rounded-full ${student.sacramentos.batismo ? 'bg-green-500' : 'bg-gray-200'}`} />
+                            <span title="Eucaristia" className={`w-2 h-2 rounded-full ${student.sacramentos.eucaristia ? 'bg-green-500' : 'bg-gray-200'}`} />
+                            <span title="Crisma" className={`w-2 h-2 rounded-full ${student.sacramentos.crisma ? 'bg-green-500' : 'bg-gray-200'}`} />
+                          </span>
                         </div>
+                        {contato && (
+                          <p className="text-xs text-gray-400 truncate mt-0.5">{contato.parentesco ? `${contato.parentesco}: ` : ''}{contato.nome}</p>
+                        )}
                       </div>
-                    </div>
+                    </button>
+                    {contato ? (
+                      <a
+                        href={`https://wa.me/55${contato.telefone.replace(/D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 my-3 mr-3 w-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white flex items-center justify-center shadow-sm"
+                        aria-label={`WhatsApp de ${contato.nome}`}
+                        title={`WhatsApp: ${contato.telefone}`}
+                      >
+                        <MessageCircle size={22} />
+                      </a>
+                    ) : (
+                      <span className="shrink-0 my-3 mr-3 w-12 rounded-xl bg-gray-50 text-gray-300 flex items-center justify-center" title="Sem telefone cadastrado">
+                        <MessageCircle size={22} />
+                      </span>
+                    )}
                   </div>
                 );
               })
@@ -778,8 +801,8 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                             <p className="text-xs text-gray-500">{r.telefone}</p>
                           </div>
                           {r.telefone && (
-                            <button onClick={() => openWhatsApp(r.telefone)} className="p-2 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shrink-0">
-                              <MessageCircle size={16} />
+                            <button onClick={() => openWhatsApp(r.telefone)} className="px-3 py-2.5 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shrink-0 flex items-center gap-1.5 text-sm font-semibold">
+                              <MessageCircle size={18} /> WhatsApp
                             </button>
                           )}
                         </div>

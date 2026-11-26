@@ -58,6 +58,36 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
 
   const isCoordenador = user?.role === UserRole.COORDENADOR;
 
+  // O que esta pessoa coordena / acompanha (paróquia › comunidade · papel)
+  const papel = user?.role === UserRole.COORDENADOR ? 'Coordenador(a)' : user?.role === UserRole.ADMIN ? 'Administrador' : labels.lider !== '-' ? labels.lider : 'Líder';
+  const temComunidade = !!user?.comunidade;
+  const paroquiaNome = user?.paroquia && user.paroquia !== 'Paróquia' ? user.paroquia : '';
+  const Escopo = ({ compacto }: { compacto?: boolean }) => (
+    temComunidade || paroquiaNome ? (
+      compacto ? (
+        <div className="text-right min-w-0">
+          <p className="text-[11px] font-semibold text-church-800 truncate max-w-[11rem]">{user?.comunidade || paroquiaNome}</p>
+          <p className="text-[10px] text-gold-700 font-semibold">{papel}</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3.5">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Você cuida de</p>
+          {paroquiaNome && <p className="text-xs text-gray-500 truncate">{paroquiaNome}</p>}
+          {temComunidade && <p className="text-sm font-semibold text-gray-900 truncate">{user?.comunidade}</p>}
+          <div className="flex flex-wrap gap-1 mt-2">
+            <span className="text-[10px] font-semibold bg-church-50 text-church-700 border border-church-100 rounded-full px-2 py-0.5">{papel}</span>
+            <span className="text-[10px] font-semibold bg-gold-50 text-gold-800 border border-gold-200 rounded-full px-2 py-0.5">{labels.pastoralNome}</span>
+          </div>
+        </div>
+      )
+    ) : user?.role !== UserRole.ADMIN ? (
+      <button type="button" onClick={() => window.location.reload()}
+        className={`${compacto ? 'text-[11px] px-2 py-1' : 'w-full text-xs p-3'} rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-semibold text-left`}>
+        {compacto ? 'Comunidade não carregou · tocar' : 'Sua paróquia/comunidade não carregou. Toque para tentar de novo.'}
+      </button>
+    ) : null
+  );
+
   return (
     <div className="min-h-screen bg-marfim font-sans flex flex-col md:flex-row">
       {/* Mobile Header */}
@@ -68,6 +98,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
           </div>
           <span className="font-serif font-semibold text-xl tracking-tight">PastoriAI</span>
         </div>
+        {!isMobileMenuOpen && <Escopo compacto />}
         {/* No celular o menu completo abre pelo "Mais" da barra inferior; aqui só o botão de fechar */}
         {isMobileMenuOpen && (
           <button
@@ -146,6 +177,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
 
         {/* Sidebar Footer */}
         <div className="p-4 bg-gradient-to-t from-marfim-claro to-transparent space-y-2">
+          <Escopo />
           <button 
             onClick={logout}
             className="w-full flex items-center justify-center space-x-2 text-sm font-medium text-gray-500 hover:text-church-600 hover:bg-church-50 p-3 rounded-xl transition-all duration-200 group border border-gray-200 hover:border-church-200"

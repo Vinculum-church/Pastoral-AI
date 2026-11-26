@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Shield, UserPlus, Mail, Lock, User, Church, MapPin, Loader2, CheckCircle, AlertCircle,
-  Plus, Trash2, Pencil, X, LayoutDashboard, Users, ChevronDown, ChevronRight, Search,
+  Plus, Trash2, Pencil, X, LayoutDashboard, Users, ChevronDown, ChevronRight, Search, GraduationCap,
 } from 'lucide-react';
+import AdminEscola from './escola/AdminEscola';
 import { useAuth } from '../contexts/AuthContext';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { PastoralType } from '../types';
@@ -17,7 +18,7 @@ interface Coordenador {
   paroquia_nome?: string; comunidade_nome?: string;
 }
 
-type AdminTab = 'dashboard' | 'paroquias' | 'comunidades' | 'coordenadores';
+type AdminTab = 'dashboard' | 'paroquias' | 'comunidades' | 'coordenadores' | 'escola';
 
 const SEGMENTOS: { type: PastoralType; config: PastoralConfig }[] = [
   { type: PastoralType.CATEQUESE, config: PASTORAL_CONFIGS[PastoralType.CATEQUESE] },
@@ -116,8 +117,11 @@ const AdminPanel: React.FC = () => {
 
   if (!hasSupabase) {
     return (
-      <div className="max-w-2xl mx-auto p-8 bg-amber-50 border border-amber-200 rounded-2xl">
-        <p className="text-amber-800 font-medium">Supabase não configurado. O painel admin requer banco de dados.</p>
+      <div className="space-y-6">
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+          <p className="text-amber-800 font-medium text-sm">Modo demonstração (sem banco): paróquias, comunidades e coordenadores ficam indisponíveis. A Escola Pastoral funciona e salva só neste navegador.</p>
+        </div>
+        <AdminEscola getSessionToken={getSessionToken} />
       </div>
     );
   }
@@ -135,6 +139,7 @@ const AdminPanel: React.FC = () => {
     { key: 'paroquias', label: 'Paróquias', icon: Church },
     { key: 'comunidades', label: 'Comunidades', icon: MapPin },
     { key: 'coordenadores', label: 'Coordenadores', icon: Users },
+    { key: 'escola', label: 'Escola Pastoral', icon: GraduationCap },
   ];
 
   return (
@@ -192,6 +197,7 @@ const AdminPanel: React.FC = () => {
         <ComunidadesTab comunidades={comunidades} paroquias={paroquias} search={search} setSearch={setSearch}
           onReload={loadData} setError={setError} setSuccess={setSuccess} clearMessages={clearMessages} adminMutation={adminMutation} />
       )}
+      {tab === 'escola' && <AdminEscola getSessionToken={getSessionToken} />}
       {tab === 'coordenadores' && (
         <CoordenadoresTab coordenadores={coordenadores} paroquias={paroquias} comunidades={comunidades}
           search={search} setSearch={setSearch} onReload={loadData} setError={setError} setSuccess={setSuccess}

@@ -50,6 +50,7 @@ export interface User {
   comunidade?: string;
   pastoral_type?: PastoralType;
   avatar?: string;
+  foto_url?: string;
 }
 
 export interface Parish {

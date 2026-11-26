@@ -7,6 +7,7 @@ import { Responsavel, Catequista, Catequizando, Familia, ResponsavelSimples } fr
 import { UserRole } from '../types';
 import { MOCK_COMUNIDADES } from '../constants';
 import { isSupabaseConfigured } from '../services/supabaseClient';
+import FotoPicker from './FotoPicker';
 
 interface PeopleManagerProps {
   initialTab?: 'participantes' | 'marketing' | 'lideres';
@@ -48,19 +49,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
      foto_url: '',
   });
 
-  const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        setStudentForm(prev => ({ ...prev, foto_url: reader.result as string }));
-      }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
+  const [fotoUrl, setFotoUrl] = useState('');
   const [responsaveisList, setResponsaveisList] = useState<ResponsavelSimples[]>([]);
   const [tempResponsavel, setTempResponsavel] = useState<ResponsavelSimples>({
       nome: '',
@@ -254,6 +243,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
       familia_id: student.familia_id || '',
       foto_url: student.foto_url || '',
     });
+    setFotoUrl(student.foto_url || '');
     setResponsaveisList(student.responsaveis || []);
     setTempResponsavel({ nome: '', parentesco: 'Mãe', telefone: '' });
     setIsModalOpen(true);
@@ -275,6 +265,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
         familia_id: '',
         foto_url: '',
     });
+    setFotoUrl('');
     setResponsaveisList([]);
     setTempResponsavel({ nome: '', parentesco: 'Mãe', telefone: '' });
   };
@@ -294,8 +285,8 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
         data_nascimento: studentForm.data_nascimento,
         telefone: studentForm.telefone,
         endereco: studentForm.endereco,
+        foto_url: fotoUrl,
         turma_id: studentForm.turma_id,
-        foto_url: studentForm.foto_url,
         sacramentos: {
             batismo: studentForm.batismo,
             eucaristia: studentForm.eucaristia,
@@ -889,31 +880,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                         <div>
                             <h4 className="text-xs font-bold text-church-600 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Dados do {labels.participante}</h4>
                             <div className="space-y-4">
-                                <div className="flex flex-col items-center gap-2">
-                                    <div
-                                      className="relative w-20 h-20 rounded-full cursor-pointer group"
-                                      onClick={() => fotoInputRef.current?.click()}
-                                      title="Clique para adicionar foto"
-                                    >
-                                      {studentForm.foto_url ? (
-                                        <img src={studentForm.foto_url} alt="Foto" className="w-20 h-20 rounded-full object-cover border-2 border-church-200" />
-                                      ) : (
-                                        <div className="w-20 h-20 rounded-full bg-church-50 border-2 border-dashed border-church-300 flex flex-col items-center justify-center text-church-400">
-                                          <Camera size={20} />
-                                          <span className="text-[10px] font-bold mt-1">Foto</span>
-                                        </div>
-                                      )}
-                                      <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Camera size={16} className="text-white" />
-                                      </div>
-                                    </div>
-                                    {studentForm.foto_url && (
-                                      <button type="button" onClick={() => setStudentForm(prev => ({ ...prev, foto_url: '' }))} className="text-xs text-red-500 hover:text-red-700">
-                                        Remover foto
-                                      </button>
-                                    )}
-                                    <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoUpload} />
-                                </div>
+                                <FotoPicker value={fotoUrl} onChange={setFotoUrl} folder={paroquia.id} />
                                 <div>
                                     <label className="block text-sm font-bold text-gray-800 mb-1.5">Nome Completo</label>
                                     <input type="text" required className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-church-500 outline-none text-gray-900 bg-gray-50 focus:bg-white transition-all" 

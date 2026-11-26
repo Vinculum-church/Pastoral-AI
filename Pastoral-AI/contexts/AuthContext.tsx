@@ -11,6 +11,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   getSessionToken: () => Promise<string | null>;
   updateUserAvatar: (avatarUrl: string) => void;
+  updateUserFoto: (url: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,6 +54,7 @@ function mapProfileToUser(profile: any, email: string): User {
     comunidade: profile.comunidade_nome || '',
     pastoral_type: (profile.pastoral_type as PastoralType) || PastoralType.CATEQUESE,
     avatar: savedAvatar || profile.nome?.charAt(0) || 'U',
+    foto_url: profile.foto_url || '',
   };
 }
 
@@ -174,8 +176,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (!result || (result as any).error) return null;
       const profile = (result as any).data;
       if (profile) {
+        // foto_url é buscada à parte: se a coluna ainda não existir, o login não quebra
+        let foto_url = '';
+        try {
+          const f = await supabase.from('profiles').select('foto_url').eq('id', userId).maybeSingle();
+          foto_url = (f.data as any)?.foto_url || '';
+        } catch (_) {}
         return {
           ...profile,
+          foto_url,
           paroquia_nome: profile.paroquias?.nome || 'Paróquia',
           comunidade_nome: profile.comunidades?.nome || '',
           comunidade_id: profile.comunidade_id || null,
@@ -237,6 +246,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { success: true };
   };
 
+  const updateUserFoto = async (url: string) => {
+    if (!user) return { success: false, error: 'Sem usuário.' };
+    if (supabase && useSupabase) {
+      const { error } = await supabase.from('profiles').update({ foto_url: url || null }).eq('id', user.id);
+      if (error) return { success: false, error: error.message };
+    }
+    setUser(prev => (prev ? { ...prev, foto_url: url } : prev));
+    return { success: true };
+  };
+
   const getSessionToken = async (): Promise<string | null> => {
     if (!supabase) return null;
     const { data: { session } } = await supabase.auth.getSession();
@@ -264,7 +283,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user, getSessionToken, updateUserAvatar }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user, getSessionToken, updateUserAvatar, updateUserFoto }}>
       {children}
     </AuthContext.Provider>
   );

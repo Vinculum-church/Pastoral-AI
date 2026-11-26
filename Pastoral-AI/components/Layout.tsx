@@ -1,9 +1,10 @@
-import React, { useRef } from 'react';
-import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, GraduationCap, Inbox, Home, ClipboardCheck, Camera } from 'lucide-react';
+import React from 'react';
+import { Church, LayoutDashboard, Users, Calendar, Sparkles, BookOpen, Menu, X, LogOut, MessageCircle, FolderOpen, BarChart3, ChevronRight, GraduationCap, Inbox, Home, ClipboardCheck } from 'lucide-react';
 import { ViewState, UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { usePastoral } from '../contexts/PastoralContext';
 import { useData } from '../contexts/DataContext';
+import FotoPicker from './FotoPicker';
 
 interface LayoutProps {
   currentView: ViewState;
@@ -19,25 +20,11 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
     mainRef.current?.scrollTo({ top: 0 });
     window.scrollTo({ top: 0 }); // no celular quem rola é a página
   }, [currentView]);
-  const { user, logout, updateUserAvatar } = useAuth();
+  const { user, logout, updateUserFoto } = useAuth();
+  const [fotoOpen, setFotoOpen] = React.useState(false);
+  const [fotoMsg, setFotoMsg] = React.useState('');
   const { labels } = usePastoral();
   const { solicitacoes } = useData();
-  const avatarInputRef = useRef<HTMLInputElement>(null);
-
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        updateUserAvatar(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
-  const isAvatarImage = user?.avatar?.startsWith('data:') || user?.avatar?.startsWith('http');
 
   const NavItem = ({ view, icon: Icon, label, badge }: { view: ViewState; icon: any; label: string; badge?: number }) => {
     const isActive = currentView === view;
@@ -119,23 +106,10 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
           </div>
 
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-3 mb-2">
-             <div
-               className="relative w-10 h-10 rounded-full shrink-0 cursor-pointer group"
-               onClick={() => avatarInputRef.current?.click()}
-               title="Clique para alterar foto de perfil"
-             >
-               {isAvatarImage ? (
-                 <img src={user!.avatar} alt="Foto de perfil" className="w-10 h-10 rounded-full object-cover border border-church-100" />
-               ) : (
-                 <div className="w-10 h-10 rounded-full bg-church-50 border border-church-100 flex items-center justify-center text-church-700 font-bold text-sm">
-                   {user?.avatar || user?.name.charAt(0)}
-                 </div>
-               )}
-               <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                 <Camera size={14} className="text-white" />
-               </div>
-             </div>
-             <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+             <button type="button" onClick={() => { setFotoOpen(true); setFotoMsg(''); }} title="Alterar minha foto"
+                className="w-10 h-10 rounded-full bg-church-50 border border-church-100 flex items-center justify-center text-church-700 font-bold text-sm shrink-0 overflow-hidden">
+                {user?.foto_url ? <img src={user.foto_url} alt="" className="w-full h-full object-cover" /> : (user?.avatar || user?.name.charAt(0))}
+             </button>
              <div className="overflow-hidden">
                 <p className="text-sm font-bold text-gray-900 truncate">{user?.name.split('/')[0]}</p>
                 <p className="text-[10px] text-gray-500 font-medium truncate">{user?.paroquia}</p>
@@ -226,6 +200,25 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }) => {
           </button>
         </div>
       </nav>
+
+      {fotoOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setFotoOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-900 mb-4">Minha foto</h3>
+            <FotoPicker
+              value={user?.foto_url || ''}
+              folder={user?.parish_id || 'perfil'}
+              size={96}
+              onChange={async url => {
+                const r = await updateUserFoto(url);
+                setFotoMsg(r.success ? 'Foto salva.' : `Não foi possível salvar: ${r.error}`);
+              }}
+            />
+            {fotoMsg && <p className="text-xs text-gray-600 mt-3">{fotoMsg}</p>}
+            <button type="button" onClick={() => setFotoOpen(false)} className="mt-5 w-full bg-church-700 text-white font-bold py-2.5 rounded-xl">Fechar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

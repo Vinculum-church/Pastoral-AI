@@ -7,6 +7,7 @@ import { Responsavel, Catequista, Catequizando, Familia, ResponsavelSimples } fr
 import { UserRole } from '../types';
 import { MOCK_COMUNIDADES } from '../constants';
 import { isSupabaseConfigured } from '../services/supabaseClient';
+import FotoPicker from './FotoPicker';
 
 interface PeopleManagerProps {
   initialTab?: 'participantes' | 'marketing' | 'lideres';
@@ -40,6 +41,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
      familia_id: '',
   });
 
+  const [fotoUrl, setFotoUrl] = useState('');
   const [responsaveisList, setResponsaveisList] = useState<ResponsavelSimples[]>([]);
   const [tempResponsavel, setTempResponsavel] = useState<ResponsavelSimples>({
       nome: '',
@@ -232,6 +234,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
       observacoes_pastorais: student.observacoes_pastorais,
       familia_id: student.familia_id || '',
     });
+    setFotoUrl(student.foto_url || '');
     setResponsaveisList(student.responsaveis || []);
     setTempResponsavel({ nome: '', parentesco: 'Mãe', telefone: '' });
     setIsModalOpen(true);
@@ -251,6 +254,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
         observacoes_pastorais: '',
         familia_id: '',
     });
+    setFotoUrl('');
     setResponsaveisList([]);
     setTempResponsavel({ nome: '', parentesco: 'Mãe', telefone: '' });
   };
@@ -269,6 +273,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
         nome_completo: studentForm.nome_completo,
         data_nascimento: studentForm.data_nascimento,
         telefone: studentForm.telefone,
+        foto_url: fotoUrl,
         turma_id: studentForm.turma_id,
         sacramentos: {
             batismo: studentForm.batismo,
@@ -499,9 +504,13 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                             <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
+                                        {student.foto_url ? (
+                                            <img src={student.foto_url} alt="" className="h-8 w-8 rounded-full object-cover mr-3 border border-church-200" />
+                                        ) : (
                                         <div className="h-8 w-8 rounded-full bg-church-100 flex items-center justify-center text-church-600 font-bold mr-3 text-xs border border-church-200">
                                             {student.nome_completo.charAt(0)}
                                         </div>
+                                        )}
                                         <div>
                                             <div className="text-sm font-bold text-gray-900">{student.nome_completo}</div>
                                             <div className="text-xs text-gray-500 flex items-center gap-2">
@@ -664,6 +673,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ initialTab = 'participant
                         <div>
                             <h4 className="text-xs font-bold text-church-600 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Dados do {labels.participante}</h4>
                             <div className="space-y-4">
+                                <FotoPicker value={fotoUrl} onChange={setFotoUrl} folder={paroquia.id} />
                                 <div>
                                     <label className="block text-sm font-bold text-gray-800 mb-1.5">Nome Completo</label>
                                     <input type="text" required className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-church-500 outline-none text-gray-900 bg-gray-50 focus:bg-white transition-all" 

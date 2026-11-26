@@ -50,6 +50,7 @@ export interface User {
   comunidade?: string;
   pastoral_type?: PastoralType;
   avatar?: string;
+  foto_url?: string;
 }
 
 export interface Parish {
@@ -109,7 +110,8 @@ export interface Catequizando {
   nome_completo: string;
   data_nascimento: string;
   telefone?: string; // Telefone do próprio catequizando
-  
+  foto_url?: string;
+
   // Mantidos para compatibilidade com relatórios legados (pega o 1º da lista)
   nome_responsavel: string; 
   telefone_responsavel: string; 

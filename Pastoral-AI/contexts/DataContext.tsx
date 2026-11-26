@@ -70,6 +70,7 @@ function rowToParticipante(row: any): Catequizando {
     nome_completo: row.nome_completo,
     data_nascimento: row.data_nascimento || '',
     telefone: row.telefone || '',
+    foto_url: row.foto_url || '',
     nome_responsavel: primary.nome || '',
     telefone_responsavel: primary.telefone || '',
     responsaveis: responsaveis,
@@ -90,6 +91,8 @@ function participanteToRow(data: Omit<Catequizando, 'id'>, paroquiaId: string, p
     sacramentos: data.sacramentos,
     observacoes: data.observacoes_pastorais || '',
     responsaveis: data.responsaveis || [],
+    // só envia quando há foto: evita erro se a coluna ainda não existir no banco
+    ...(data.foto_url ? { foto_url: data.foto_url } : {}),
   };
 }
 
@@ -396,6 +399,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       sacramentos: catequizando.sacramentos,
       observacoes: catequizando.observacoes_pastorais || '',
       responsaveis: catequizando.responsaveis || [],
+      ...(catequizando.foto_url !== undefined ? { foto_url: catequizando.foto_url || null } : {}),
     }).eq('id', catequizando.id);
 
     if (error) { console.error('Erro ao atualizar participante:', error); return; }
